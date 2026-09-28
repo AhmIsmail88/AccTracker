@@ -1,24 +1,27 @@
-# ProTrack — Android (Phase 2 — الجزء الأول)
+# ProTrack — Android (Phase 2)
 
-تطبيق الفني (أوفلاين). المبني حاليًا:
+تطبيق الفني (أوفلاين): Kotlin 1.9.20 + Jetpack Compose + Material 3 + Room.
 
-- مشروع Gradle (Kotlin 1.9.20 + Jetpack Compose + Material 3 + Room).
-- **إدارة شجرة المواقع أوفلاين**: إضافة / إعادة تسمية / تعطيل-تفعيل، وأكواد تلقائية `PRJ/RGN/ZN/LOC`.
-- عربي (افتراضي) + إنجليزي مع دعم RTL.
+## المنفَّذ
+
+- **إدارة شجرة المواقع أوفلاين**: إضافة / إعادة تسمية / تعطيل-تفعيل (مشروع/منطقة/Zone/موقع)، أكواد تلقائية `PRJ/RGN/ZN/LOC`.
+- **تدفق الزيارة**: اختيار الموقع ← المعدات (نوع/موديل/عدد + قراءات لكل معدة) ← بنود العنبر الـ12 ← مراجعة.
+- **تصدير حزمة الزيارة**: `visit.xlsx` + `manifest.json` + `manifest.sig` (توقيع ECDSA P-256 من Android Keystore) داخل ZIP، يُحفظ في `packages/` ويمكن مشاركته.
+- عربي (افتراضي) + إنجليزي مع RTL.
 
 ## البناء والفحوص
 
 ```bash
 cd android
-.\gradlew.bat :app:assembleDebug        # ينتج app/build/outputs/apk/debug/app-debug.apk
-.\gradlew.bat :app:testDebugUnitTest    # فحوص الوحدة (منطق الأكواد + بناء الشجرة)
+.\gradlew.bat :app:assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+.\gradlew.bat :app:testDebugUnitTest    # فحوص الوحدة (أكواد/شجرة/بناء الحزمة)
 ```
 
-> يحتاج JDK 17+ و Android SDK (يُحدد مساره في `local.properties`، وهو غير مُتتبع في Git).
+> يحتاج JDK 17+ و Android SDK (`sdk.dir` في `local.properties` — غير مُتتبع في Git).
+> فحص `PackageBuilderTest` ينتج artifact في `app/build/test-artifacts/` يعدّي validator المشروع بحالة PASS
+> وتم استيراده فعليًا في باك-إند الويب.
 
-## القادم (الجزء الثاني)
+## القادم
 
-- شاشة أول تشغيل (اسم الفني + اللغة).
-- شاشات الزيارة: المعدات والقراءات والبنود.
-- الكاميرا وGPS.
-- تصدير حزمة الزيارة (نفس عقد `contract/`).
+- أول تشغيل (اسم الفني + اللغة).
+- الكاميرا وGPS وربطهما بالصور داخل الحزمة.

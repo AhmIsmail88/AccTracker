@@ -19,7 +19,10 @@ import androidx.compose.ui.unit.dp
 import com.protrack.app.R
 
 @Composable
-fun HomeScreen(onManageLocations: () -> Unit) {
+fun HomeScreen(
+    onManageLocations: () -> Unit,
+    onNewVisit: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,14 +50,10 @@ fun HomeScreen(onManageLocations: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = { },
-            enabled = false,
+            onClick = onNewVisit,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(
-                text = stringResource(R.string.home_new_visit) + " — " +
-                    stringResource(R.string.home_coming_soon),
-            )
+            Text(text = stringResource(R.string.home_new_visit))
         }
     }
 }

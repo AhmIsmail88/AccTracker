@@ -1,0 +1,153 @@
+package com.protrack.app.ui.visit
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.protrack.app.data.ExportOutcome
+import com.protrack.app.data.HierarchyRepository
+import com.protrack.app.data.PackageExporter
+import com.protrack.app.data.VisitRepository
+import com.protrack.app.data.db.VisitChecklistEntity
+import com.protrack.app.data.db.VisitEntity
+import com.protrack.app.data.db.VisitEquipmentEntity
+import com.protrack.app.domain.NodeType
+import com.protrack.app.domain.TreeBuilder
+import com.protrack.app.domain.TreeNode
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+data class LocationOption(val code: String, val name: String, val path: String)
+
+class VisitViewModel(
+    private val hierarchyRepository: HierarchyRepository,
+    private val visitRepository: VisitRepository,
+    private val exporter: PackageExporter,
+) : ViewModel() {
+
+    enum class Step { LOCATION, EQUIPMENT, CHECKLIST, REVIEW }
+
+    private val _step = MutableStateFlow(Step.LOCATION)
+    private val _visitId = MutableStateFlow<Long?>(null)
+    private val _exportOutcome = MutableStateFlow<ExportOutcome?>(null)
+    private val _busy = MutableStateFlow(false)
+
+    val step: StateFlow<Step> = _step
+    val exportOutcome: StateFlow<ExportOutcome?> = _exportOutcome
+    val busy: StateFlow<Boolean> = _busy
+
+    val locationOptions: StateFlow<List<LocationOption>> =
+        hierarchyRepository.data
+            .map { data ->
+                val tree = TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
+                collectLocations(tree)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val visit: StateFlow<VisitEntity?> = _visitId
+        .flatMapLatest { id -> if (id == null) flowOf(null) else visitRepository.visit(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val equipment: StateFlow<List<VisitEquipmentEntity>> = _visitId
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else visitRepository.equipment(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val checklist: StateFlow<List<VisitChecklistEntity>> = _visitId
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else visitRepository.checklist(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun chooseLocation(code: String) {
+        if (_visitId.value != null) return
+        viewModelScope.launch {
+            _visitId.value = visitRepository.createVisit(code)
+            _step.value = Step.EQUIPMENT
+        }
+    }
+
+    fun addEquipment(kind: String, model: String, quantity: Int) {
+        val id = _visitId.value ?: return
+        viewModelScope.launch { visitRepository.addEquipment(id, kind, model, quantity) }
+    }
+
+    fun updateEquipment(entity: VisitEquipmentEntity) {
+        viewModelScope.launch { visitRepository.updateEquipment(entity) }
+    }
+
+    fun cycleChecklist(item: VisitChecklistEntity) {
+        val next = when (item.status) {
+            "OK" -> "MINOR"
+            "MINOR" -> "FAULT"
+            else -> "OK"
+        }
+        viewModelScope.launch { visitRepository.updateChecklist(item.copy(status = next)) }
+    }
+
+    fun next() {
+        _step.value = when (_step.value) {
+            Step.LOCATION -> Step.EQUIPMENT
+            Step.EQUIPMENT -> Step.CHECKLIST
+            Step.CHECKLIST -> Step.REVIEW
+            Step.REVIEW -> Step.REVIEW
+        }
+    }
+
+    fun back() {
+        _step.value = when (_step.value) {
+            Step.LOCATION -> Step.LOCATION
+            Step.EQUIPMENT -> Step.LOCATION
+            Step.CHECKLIST -> Step.EQUIPMENT
+            Step.REVIEW -> Step.CHECKLIST
+        }
+    }
+
+    fun export(notes: String) {
+        val id = _visitId.value ?: return
+        if (_busy.value) return
+        viewModelScope.launch {
+            _busy.value = true
+            _exportOutcome.value = exporter.export(id, notes)
+            _busy.value = false
+        }
+    }
+
+    fun reset() {
+        _visitId.value = null
+        _step.value = Step.LOCATION
+        _exportOutcome.value = null
+        _busy.value = false
+    }
+
+    private fun collectLocations(tree: List<TreeNode>): List<LocationOption> {
+        val out = mutableListOf<LocationOption>()
+        fun rec(nodes: List<TreeNode>, path: List<String>) {
+            for (node in nodes) {
+                val newPath = path + node.name
+                if (node.type == NodeType.LOCATION) {
+                    out += LocationOption(node.code, node.name, newPath.dropLast(1).joinToString(" / "))
+                }
+                rec(node.children, newPath)
+            }
+        }
+        rec(tree, emptyList())
+        return out
+    }
+
+    class Factory(
+        private val hierarchyRepository: HierarchyRepository,
+        private val visitRepository: VisitRepository,
+        private val exporter: PackageExporter,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            VisitViewModel(hierarchyRepository, visitRepository, exporter) as T
+    }
+}

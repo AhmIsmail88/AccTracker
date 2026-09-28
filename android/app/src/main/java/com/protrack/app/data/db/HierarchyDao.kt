@@ -68,4 +68,16 @@ interface HierarchyDao {
 
     @Update
     suspend fun updateLocation(entity: LocationEntity)
+
+    @Query("UPDATE project SET syncState = 'SYNCED' WHERE code = :code")
+    suspend fun markProjectSynced(code: String)
+
+    @Query("UPDATE region SET syncState = 'SYNCED' WHERE code = :code")
+    suspend fun markRegionSynced(code: String)
+
+    @Query("UPDATE zone SET syncState = 'SYNCED' WHERE code = :code")
+    suspend fun markZoneSynced(code: String)
+
+    @Query("UPDATE location SET syncState = 'SYNCED' WHERE code = :code")
+    suspend fun markLocationSynced(code: String)
 }
