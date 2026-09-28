@@ -30,6 +30,7 @@ py -3.12 -m venv .venv
 | الأصول | `GET /api/assets` · `GET /api/assets/{asset_code}` |
 | الزيارات | `GET /api/visits` · `GET /api/visits/{visit_id}` |
 | الـManuals | `POST /api/manuals` (رفع PDF) · `GET /api/manuals` · `GET /api/manuals/{id}` · `GET /api/manuals/{id}/chunks` · `GET /api/manuals/search?q=` |
+| قواعد الصيانة | `POST /api/manuals/{id}/extract-rules` (LLM محلي) · `GET /api/manuals/{id}/rules` · `GET /api/rules` · `PATCH /api/rules/{id}` (اعتماد/رفض/تعديل) |
 
 ## الفحوص
 

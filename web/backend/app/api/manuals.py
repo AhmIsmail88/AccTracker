@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""API الـManuals (Phase 3): رفع + قائمة + تفاصيل + مقاطع + بحث."""
+"""API الـManuals (Phase 3): رفع + قائمة + تفاصيل + مقاطع + بحث + استخراج قواعد."""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -7,8 +7,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.base import get_db
-from app.db.models import Manual, ManualChunk, ManualSection
+from app.db.models import Manual, MaintenanceRule, ManualChunk, ManualSection
 from app.services.manuals import ingest_manual, search_chunks
+from app.services.rules import LLMUnavailable, extract_rules, rule_to_dict
 
 router = APIRouter(prefix="/api/manuals", tags=["manuals"])
 
@@ -65,6 +66,31 @@ def list_manuals(db: Session = Depends(get_db)):
 def search(q: str, limit: int = 10, db: Session = Depends(get_db)):
     safe_limit = max(1, min(limit, 50))
     return search_chunks(db, q, safe_limit)
+
+
+@router.post("/{manual_id}/extract-rules")
+def extract_manual_rules(manual_id: int, limit_chunks: int = 25, db: Session = Depends(get_db)):
+    safe_limit = max(1, min(limit_chunks, 100))
+    try:
+        return extract_rules(db, manual_id, limit_chunks=safe_limit)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="manual not found")
+    except LLMUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+
+@router.get("/{manual_id}/rules")
+def get_manual_rules(manual_id: int, db: Session = Depends(get_db)):
+    manual = db.get(Manual, manual_id)
+    if manual is None:
+        raise HTTPException(status_code=404, detail="manual not found")
+    rows = (
+        db.query(MaintenanceRule)
+        .filter(MaintenanceRule.manual_id == manual_id)
+        .order_by(MaintenanceRule.id)
+        .all()
+    )
+    return [rule_to_dict(row) for row in rows]
 
 
 @router.get("/{manual_id}")
