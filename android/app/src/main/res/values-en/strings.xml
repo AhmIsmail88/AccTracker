@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ProTrack</string>
+    <string name="home_subtitle">Sites &amp; Maintenance Tracking</string>
+    <string name="home_manage_locations">Manage Locations</string>
+    <string name="home_new_visit">New Visit</string>
+    <string name="home_coming_soon">Coming soon</string>
+    <string name="nav_back">Back</string>
+    <string name="locations_title">Manage Locations</string>
+    <string name="empty_tree">No locations yet — tap + to add a project</string>
+    <string name="add_project">Add Project</string>
+    <string name="add_region">Add Region</string>
+    <string name="add_zone">Add Zone</string>
+    <string name="add_location">Add Location</string>
+    <string name="rename">Rename</string>
+    <string name="deactivate">Deactivate</string>
+    <string name="activate">Activate</string>
+    <string name="actions">Actions</string>
+    <string name="dialog_name_label">Name</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="status_active">Active</string>
+    <string name="status_inactive">Inactive</string>
+</resources>

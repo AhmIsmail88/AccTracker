@@ -9,6 +9,7 @@
 
 - ✅ **Phase 0 (Contract):** مخططات العقد (`contract/`) + أدوات التحقق والبناء (`tools/`) + فحوص (`tests/`) — بلا تبعيات خارجية.
 - ✅ **Phase 1 (Web Core):** باك-إند الويب (`web/backend/`): FastAPI + SQLite + Alembic + شجرة المواقع + استيراد الحزم ودمج التقسيم + مطابقة المعدات.
+- ✅ **Phase 2 (Android MVP — الجزء الأول):** مشروع `android/` (Kotlin + Compose + Room) مع **إدارة شجرة المواقع أوفلاين** (إضافة/تعديل/تعطيل + أكواد تلقائية).
 
 ## تشغيل سريع — أدوات العقد (Phase 0)
 
@@ -32,7 +33,17 @@ py -3.12 -m venv .venv
 - API: `http://127.0.0.1:8000/api/health`
 - تفاصيل أكثر: `web/backend/README.md`.
 
+## تشغيل سريع — الأندرويد (Phase 2)
+
+```bash
+cd android
+.\gradlew.bat :app:assembleDebug
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+- تفاصيل أكثر: `android/README.md`.
+
 ## خريطة العمل القادمة
 
-- Phase 2: Android MVP (إدارة المواقع + الزيارات + تصدير الحزمة).
+- الجزء الثاني من Phase 2: أول تشغيل (اسم الفني) + شاشات الزيارة + الكاميرا/GPS + تصدير الحزمة.
 - Phase 3+: Manuals / Maintenance Engine / AI (راجع `ARCHITECTURE.md` §33/§34).

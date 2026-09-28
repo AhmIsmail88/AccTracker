@@ -11,3 +11,8 @@ Thumbs.db
 .DS_Store
 web/backend/data/
 web/backend/seed/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/build/
+android/app/build/

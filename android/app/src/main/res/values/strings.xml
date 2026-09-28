@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ProTrack</string>
+    <string name="home_subtitle">نظام متابعة المواقع والصيانة</string>
+    <string name="home_manage_locations">إدارة المواقع</string>
+    <string name="home_new_visit">زيارة جديدة</string>
+    <string name="home_coming_soon">قريبًا</string>
+    <string name="nav_back">رجوع</string>
+    <string name="locations_title">إدارة المواقع</string>
+    <string name="empty_tree">مفيش مواقع بعد — اضغط + لإضافة مشروع جديد</string>
+    <string name="add_project">إضافة مشروع</string>
+    <string name="add_region">إضافة منطقة</string>
+    <string name="add_zone">إضافة زون</string>
+    <string name="add_location">إضافة موقع</string>
+    <string name="rename">إعادة تسمية</string>
+    <string name="deactivate">تعطيل</string>
+    <string name="activate">تفعيل</string>
+    <string name="actions">خيارات</string>
+    <string name="dialog_name_label">الاسم</string>
+    <string name="save">حفظ</string>
+    <string name="cancel">إلغاء</string>
+    <string name="status_active">نشط</string>
+    <string name="status_inactive">معطل</string>
+</resources>
