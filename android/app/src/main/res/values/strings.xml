@@ -61,6 +61,7 @@
     <string name="kind_filter">فلاتر</string>
     <string name="visit_location_label">الموقع: %1$s</string>
     <string name="done">تم</string>
+    <string name="settings_title">الإعدادات</string>
 
     <string name="add_photo">إضافة صورة</string>
     <string name="photos_label">الصور</string>

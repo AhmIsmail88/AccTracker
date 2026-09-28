@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import com.protrack.app.ui.HomeScreen
 import com.protrack.app.ui.locations.LocationsScreen
 import com.protrack.app.ui.onboarding.OnboardingScreen
+import com.protrack.app.ui.settings.SettingsScreen
 import com.protrack.app.ui.theme.ProTrackTheme
 import com.protrack.app.ui.visit.VisitScreen
 import java.util.Locale
@@ -64,6 +65,13 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
                 technicianName = container.settings.technicianName,
                 onManageLocations = { navController.navigate("locations") },
                 onNewVisit = { navController.navigate("visit") },
+                onOpenSettings = { navController.navigate("settings") },
+            )
+        }
+        composable("settings") {
+            SettingsScreen(
+                settings = container.settings,
+                onBack = { navController.popBackStack() },
             )
         }
         composable("locations") {
