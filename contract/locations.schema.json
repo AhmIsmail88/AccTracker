@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protrack.local/contract/locations.schema.json",
+  "title": "ProTrack Locations Sheet (hierarchy)",
+  "description": "يصف صفوف شيت locations داخل visit.xlsx: تقسيم المواقع مشروع / منطقة / Zone / موقع، من إدارة المستخدم (§3.2.3 و §4.5).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["row_id", "code", "type", "name", "status"],
+    "additionalProperties": true,
+    "properties": {
+      "row_id": { "type": "integer", "minimum": 1 },
+      "code": { "type": "string", "pattern": "^(PRJ|RGN|ZN|LOC)-[0-9]{3,}$" },
+      "type": { "enum": ["PROJECT", "REGION", "ZONE", "LOCATION"] },
+      "parent_code": { "type": ["string", "null"] },
+      "name": { "type": "string", "minLength": 1 },
+      "status": { "enum": ["ACTIVE", "INACTIVE"] },
+      "updated_at": { "type": "string" }
+    }
+  },
+  "x-rules": {
+    "code_format": {
+      "PROJECT": "PRJ-###",
+      "REGION": "RGN-###",
+      "ZONE": "ZN-###",
+      "LOCATION": "LOC-###"
+    },
+    "parent": {
+      "PROJECT": "بدون أب (parent_code فارغ).",
+      "REGION": "أب من نوع PROJECT.",
+      "ZONE": "أب من نوع REGION.",
+      "LOCATION": "أب من نوع ZONE."
+    },
+    "identity": "الكود هو الهوية الثابتة للعنصر بين الأندرويد والويب.",
+    "no_delete": "لا يوجد حذف — التعطيل (INACTIVE) فقط حتى لا تنكسر مراجع الزيارات القديمة.",
+    "review_flags": [
+      "اسم مكرر تحت نفس الأب بكود مختلف => اشتباه تكرار (Flag).",
+      "نفس الكود ببيانات مختلفة => تعارض (Conflict => Flag).",
+      "نوع الأب غير متوافق مع مستوى العنصر => Flag.",
+      "أب غير موجود داخل الشيت => ملاحظة فقط (قد يكون موجوداً مسبقاً في قاعدة بيانات الويب)."
+    ],
+    "sheet_contents": [
+      "السلسلة الكاملة للموقع المستخدم في الزيارة (المشروع / المنطقة / الزون / الموقع).",
+      "أي عنصر تقسيم أضافه أو عدّله الفني محلياً ولم يُصدَّر بعد (Pending Changes)."
+    ]
+  }
+}

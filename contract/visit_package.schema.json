@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protrack.local/contract/visit_package.schema.json",
+  "title": "ProTrack Visit Package v1",
+  "description": "عقد الحزمة بين Android (الفني) و Web (المهندس). راجع §4 في ARCHITECTURE.md.",
+  "type": "object",
+  "required": ["zip_structure", "manifest", "workbook"],
+  "properties": {
+    "zip_structure": {
+      "type": "object",
+      "required": ["required_entries"],
+      "properties": {
+        "required_entries": { "const": ["visit.xlsx", "manifest.json", "manifest.sig"] },
+        "photos_dir": { "const": "photos/" },
+        "photo_files": { "const": "*.jpg" }
+      }
+    },
+    "manifest": { "$ref": "manifest.schema.json" },
+    "workbook": {
+      "type": "object",
+      "required": ["sheets"],
+      "properties": {
+        "sheets": {
+          "type": "object",
+          "required": ["_meta", "visit", "equipment", "checklist", "locations", "photos"],
+          "additionalProperties": true,
+          "properties": {
+            "_meta": { "$ref": "#/$defs/metaSheet" },
+            "visit": { "$ref": "#/$defs/visitSheet" },
+            "equipment": { "$ref": "#/$defs/equipmentSheet" },
+            "checklist": { "$ref": "#/$defs/checklistSheet" },
+            "locations": { "$ref": "#/$defs/locationsSheet" },
+            "photos": { "$ref": "#/$defs/photosSheet" }
+          }
+        },
+        "display_only": { "const": ["Report"] }
+      }
+    }
+  },
+  "$defs": {
+    "metaSheet": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "const": ["package_id", "schema_version", "created_at", "device_id", "device_public_key", "device_fingerprint"]
+        }
+      }
+    },
+    "visitSheet": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "const": ["visit_id", "location_code", "visit_type", "started_at", "ended_at", "notes", "status"]
+        }
+      }
+    },
+    "equipmentSheet": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "const": ["row_id", "visit_id", "kind", "tag", "model", "running_hours", "pressure_bar", "status", "note"]
+        }
+      }
+    },
+    "checklistSheet": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "const": ["visit_id", "item_code", "status", "note"]
+        }
+      }
+    },
+    "locationsSheet": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "const": ["row_id", "code", "type", "parent_code", "name", "status", "updated_at"]
+        }
+      }
+    },
+    "photosSheet": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "const": ["row_id", "file", "target_type", "target_ref", "taken_at", "lat", "lon", "accuracy_m", "sha256", "capture_sig"]
+        }
+      }
+    }
+  },
+  "x-notes": [
+    "شيت locations يحتوي السلسلة الكاملة للموقع المستخدم في الزيارة + أي تعديلات محلية معلّقة (§4.5).",
+    "قواعد دمج التقسيم (Hierarchy Merge Rules) في §4.5، والـvalidator يطبق فحوصاً مرجعية لها (FLAG عند التعارض).",
+    "شيت Report للعرض/الطباعة فقط ولا تعتمد عليه عملية الاستيراد."
+  ]
+}

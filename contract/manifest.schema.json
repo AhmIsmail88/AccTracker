@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protrack.local/contract/manifest.schema.json",
+  "title": "ProTrack Visit Package Manifest (v1)",
+  "description": "مانيفست حزمة الزيارة — يُوقَّع كاملاً بـ manifest.sig. راجع §4.2 في ARCHITECTURE.md.",
+  "type": "object",
+  "required": ["package_id", "schema_version", "created_at", "device", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "description": "UUID فريد للحزمة — هوية منع التكرار عند الاستيراد."
+    },
+    "schema_version": { "const": 1 },
+    "created_at": {
+      "type": "string",
+      "description": "ISO-8601 مع إزاحة المنطقة الزمنية."
+    },
+    "device": {
+      "type": "object",
+      "required": ["device_id", "public_key", "fingerprint"],
+      "additionalProperties": false,
+      "properties": {
+        "device_id": { "type": "string" },
+        "public_key": {
+          "type": "string",
+          "description": "X.509 SubjectPublicKeyInfo (P-256) بترميز base64."
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{8,64}$",
+          "description": "بصمة مختصرة للجهاز (مثال: A1B2C3D4)."
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "pattern": "^(visit\\.xlsx|photos/[^/]+\\.jpg)$" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "taken_at": { "type": "string" },
+          "lat": { "type": "number" },
+          "lon": { "type": "number" },
+          "accuracy_m": { "type": "number" },
+          "capture_sig": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "path": { "pattern": "^photos/" } } },
+            "then": { "required": ["taken_at", "lat", "lon", "accuracy_m", "capture_sig"] }
+          }
+        ]
+      }
+    }
+  },
+  "x-notes": [
+    "enrollment_code لا يُخزَّن داخل كل حزمة بعد نجاح تسجيل الجهاز (§4.2).",
+    "manifest.sig = توقيع ECDSA P-256 (DER ثم base64) على بايتات manifest.json كما هي داخل الحزمة."
+  ]
+}

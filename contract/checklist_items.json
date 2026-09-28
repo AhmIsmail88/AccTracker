@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "status": "PROVISIONAL",
+    "note_ar": "قائمة مؤقتة مقترحة لبنود العنبر الـ12 — بانتظار اعتماد القائمة النهائية من مالك المشروع. لا تُعتبر نهائية.",
+    "updated_at": "2026-09-28"
+  },
+  "items": [
+    { "code": "CHK-01", "name_ar": "تسريب أو رطوبة حول المضخة", "name_en": "Leakage / moisture around pump", "scope": "PUMP", "active": true },
+    { "code": "CHK-02", "name_ar": "اهتزاز غير طبيعي", "name_en": "Abnormal vibration", "scope": "PUMP", "active": true },
+    { "code": "CHK-03", "name_ar": "صوت غير طبيعي", "name_en": "Abnormal noise", "scope": "PUMP", "active": true },
+    { "code": "CHK-04", "name_ar": "مستوى الزيت / التشحيم", "name_en": "Oil level / lubrication", "scope": "PUMP", "active": true },
+    { "code": "CHK-05", "name_ar": "حالة السيل الميكانيكي", "name_en": "Mechanical seal condition", "scope": "PUMP", "active": true },
+    { "code": "CHK-06", "name_ar": "قراءة ضغط السحب والطرد", "name_en": "Suction / discharge pressure check", "scope": "PUMP", "active": true },
+    { "code": "CHK-07", "name_ar": "درجة حرارة المحرك والمضخة", "name_en": "Motor / pump temperature", "scope": "PUMP", "active": true },
+    { "code": "CHK-08", "name_ar": "عمل العوامة أو حساس المستوى", "name_en": "Float / level switch operation", "scope": "STATION", "active": true },
+    { "code": "CHK-09", "name_ar": "نظافة غرفة المضخات والتهوية", "name_en": "Pump room cleanliness / ventilation", "scope": "STATION", "active": true },
+    { "code": "CHK-10", "name_ar": "حالة المحابس والمواسير", "name_en": "Valves / piping condition", "scope": "STATION", "active": true },
+    { "code": "CHK-11", "name_ar": "سلامة اللوحة الكهربائية والتأريض", "name_en": "Electrical panel / grounding safety", "scope": "STATION", "active": true },
+    { "code": "CHK-12", "name_ar": "قراءة عدّاد ساعات التشغيل", "name_en": "Running-hours meter reading", "scope": "STATION", "active": true }
+  ]
+}
