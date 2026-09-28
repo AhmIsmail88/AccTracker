@@ -95,5 +95,12 @@ fun HomeScreen(
                 Text(text = stringResource(R.string.home_visits))
             }
         }
+        Text(
+            text = stringResource(R.string.app_signature),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }

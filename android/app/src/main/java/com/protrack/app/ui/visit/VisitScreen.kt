@@ -319,9 +319,29 @@ private fun LocationStep(
     viewModel: VisitViewModel,
     onAddLocation: () -> Unit,
 ) {
-    val options by viewModel.locationOptions.collectAsState()
-    var expanded by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf<LocationOption?>(null) }
+    val tree by viewModel.hierarchyTree.collectAsState()
+    var showPicker by remember { mutableStateOf(false) }
+    var projectCode by remember { mutableStateOf<String?>(null) }
+    var regionCode by remember { mutableStateOf<String?>(null) }
+    var zoneCode by remember { mutableStateOf<String?>(null) }
+
+    val project = tree.firstOrNull { it.code == projectCode }
+    val region = project?.children?.firstOrNull { it.code == regionCode }
+    val zone = region?.children?.firstOrNull { it.code == zoneCode }
+
+    val items: List<TreeNode> = when {
+        zone != null -> zone.children
+        region != null -> region.children
+        project != null -> project.children
+        else -> tree
+    }
+    val levelTitle = when {
+        zone != null -> stringResource(R.string.visit_level_locations)
+        region != null -> stringResource(R.string.visit_level_zones)
+        project != null -> stringResource(R.string.visit_level_regions)
+        else -> stringResource(R.string.visit_level_projects)
+    }
+    val breadcrumb = listOfNotNull(project?.name, region?.name, zone?.name).joinToString(" ‹ ")
 
     Column(
         modifier = Modifier
@@ -333,42 +353,18 @@ private fun LocationStep(
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Box {
-            OutlinedButton(
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = selected?.let { it.name + " — " + it.path }
-                        ?: stringResource(R.string.visit_pick_location),
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                )
-                Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Column {
-                                Text(option.name)
-                                Text(
-                                    text = option.path,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
-                        onClick = {
-                            expanded = false
-                            selected = option
-                            viewModel.chooseLocation(option.code)
-                        },
-                    )
-                }
-            }
+        OutlinedButton(
+            onClick = { showPicker = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = breadcrumb.ifBlank { stringResource(R.string.visit_pick_location) },
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+            )
+            Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
         }
-        if (options.isEmpty()) {
+        if (tree.isEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.visit_no_locations),
@@ -384,6 +380,80 @@ private fun LocationStep(
             Spacer(modifier = Modifier.width(4.dp))
             Text(stringResource(R.string.visit_add_location))
         }
+    }
+
+    if (showPicker) {
+        AlertDialog(
+            onDismissRequest = { showPicker = false },
+            title = {
+                Column {
+                    Text(levelTitle)
+                    if (breadcrumb.isNotBlank()) {
+                        Text(
+                            text = breadcrumb,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    if (zone != null) {
+                        TextButton(onClick = { zoneCode = null }) {
+                            Text(stringResource(R.string.visit_back_level))
+                        }
+                    } else if (region != null) {
+                        TextButton(onClick = { regionCode = null }) {
+                            Text(stringResource(R.string.visit_back_level))
+                        }
+                    } else if (project != null) {
+                        TextButton(onClick = { projectCode = null }) {
+                            Text(stringResource(R.string.visit_back_level))
+                        }
+                    }
+                    if (items.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.visit_level_empty),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                    items.forEach { node ->
+                        TextButton(
+                            onClick = {
+                                when (node.type) {
+                                    NodeType.PROJECT -> projectCode = node.code
+                                    NodeType.REGION -> regionCode = node.code
+                                    NodeType.ZONE -> zoneCode = node.code
+                                    NodeType.LOCATION -> {
+                                        showPicker = false
+                                        viewModel.chooseLocation(node.code)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = node.name + if (node.status != "ACTIVE") {
+                                    " (" + stringResource(R.string.status_inactive) + ")"
+                                } else {
+                                    ""
+                                },
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Right,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            },
+        )
     }
 }
 

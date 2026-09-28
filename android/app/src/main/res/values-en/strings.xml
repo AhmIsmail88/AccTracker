@@ -142,4 +142,11 @@
     <string name="report_signature_line">Signature: ________________</string>
     <string name="visit_pick_location">Tap to choose a location</string>
     <string name="visit_add_location">Add new location</string>
+    <string name="visit_level_projects">Choose project</string>
+    <string name="visit_level_regions">Choose region</string>
+    <string name="visit_level_zones">Choose zone</string>
+    <string name="visit_level_locations">Choose location</string>
+    <string name="visit_level_empty">Nothing here yet — add from Locations</string>
+    <string name="visit_back_level">‹ Back one level</string>
+    <string name="app_signature">By Ahmed Ismail</string>
 </resources>

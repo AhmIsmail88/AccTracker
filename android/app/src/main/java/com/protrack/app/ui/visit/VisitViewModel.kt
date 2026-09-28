@@ -46,12 +46,16 @@ class VisitViewModel(
     val exportOutcome: StateFlow<ExportOutcome?> = _exportOutcome
     val busy: StateFlow<Boolean> = _busy
 
-    val locationOptions: StateFlow<List<LocationOption>> =
+    val hierarchyTree: StateFlow<List<TreeNode>> =
         hierarchyRepository.data
             .map { data ->
-                val tree = TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
-                collectLocations(tree)
+                TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
             }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val locationOptions: StateFlow<List<LocationOption>> =
+        hierarchyTree
+            .map { tree -> collectLocations(tree) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)

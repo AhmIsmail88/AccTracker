@@ -142,4 +142,11 @@
     <string name="report_signature_line">التوقيع: ________________</string>
     <string name="visit_pick_location">اضغط لاختيار الموقع</string>
     <string name="visit_add_location">إضافة موقع جديد</string>
+    <string name="visit_level_projects">اختر المشروع</string>
+    <string name="visit_level_regions">اختر المنطقة</string>
+    <string name="visit_level_zones">اختر الزون</string>
+    <string name="visit_level_locations">اختر الموقع</string>
+    <string name="visit_level_empty">مفيش عناصر هنا بعد — أضفها من إدارة المواقع</string>
+    <string name="visit_back_level">‹ رجوع خطوة لفوق</string>
+    <string name="app_signature">By Ahmed Ismail</string>
 </resources>
