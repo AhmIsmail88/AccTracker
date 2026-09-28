@@ -91,13 +91,19 @@ class VisitViewModel(
         viewModelScope.launch { visitRepository.updateEquipment(entity) }
     }
 
-    fun cycleChecklist(item: VisitChecklistEntity) {
-        val next = when (item.status) {
-            "OK" -> "MINOR"
-            "MINOR" -> "FAULT"
-            else -> "OK"
+    fun setChecklistStatus(item: VisitChecklistEntity, status: String) {
+        viewModelScope.launch { visitRepository.updateChecklist(item.copy(status = status)) }
+    }
+
+    fun saveChecklistItem(item: VisitChecklistEntity, name: String, status: String, note: String) {
+        viewModelScope.launch {
+            visitRepository.updateChecklist(item.copy(itemName = name.trim(), status = status, note = note.trim()))
         }
-        viewModelScope.launch { visitRepository.updateChecklist(item.copy(status = next)) }
+    }
+
+    fun addChecklistItem(name: String, status: String, note: String) {
+        val id = _visitId.value ?: return
+        viewModelScope.launch { visitRepository.addChecklistItem(id, name, status, note) }
     }
 
     fun newPhotoFile(): File? {

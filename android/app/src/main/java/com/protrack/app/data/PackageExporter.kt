@@ -1,6 +1,9 @@
 package com.protrack.app.data
 
 import android.content.Context
+import android.content.res.Configuration
+import com.protrack.app.R
+import com.protrack.app.domain.ChecklistCatalog
 import com.protrack.app.domain.NodeType
 import com.protrack.app.domain.export.ExportChecklist
 import com.protrack.app.domain.export.ExportEquipment
@@ -10,11 +13,13 @@ import com.protrack.app.domain.export.ExportNames
 import com.protrack.app.domain.export.ExportPhoto
 import com.protrack.app.domain.export.ExportVisit
 import com.protrack.app.domain.export.PackageBuilder
+import com.protrack.app.domain.export.ReportLabels
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 
 data class ExportOutcome(
@@ -102,7 +107,12 @@ class PackageExporter(
                     )
                 },
                 checklist = checklist.map {
-                    ExportChecklist(itemCode = it.itemCode, status = it.status, note = it.note)
+                    ExportChecklist(
+                        itemCode = it.itemCode,
+                        status = it.status,
+                        note = it.note,
+                        itemName = if (it.itemName.isNotBlank()) it.itemName else ChecklistCatalog.nameFor(it.itemCode),
+                    )
                 },
                 locations = locationNodes.map {
                     ExportLocation(
@@ -111,6 +121,9 @@ class PackageExporter(
                     )
                 },
                 photos = photos,
+                technician = settings.technicianName,
+                appVersion = appVersion(),
+                labels = reportLabels(),
             )
 
             val dir = File(context.getExternalFilesDir(null), "packages").apply { mkdirs() }
@@ -129,6 +142,68 @@ class PackageExporter(
         } catch (e: Exception) {
             ExportOutcome(false, e.message ?: e.toString())
         }
+    }
+
+    private fun appVersion(): String = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+    } catch (e: Exception) {
+        ""
+    }
+
+    /** سياق موارد بلغة التطبيق المختارة (لو محددة) — يضمن أن تقرير الإدارة بلغة المستخدم. */
+    private fun localizedContext(): Context {
+        val language = settings.languageCode
+        if (language.isNullOrBlank()) return context
+        return try {
+            val config = Configuration(context.resources.configuration)
+            config.setLocale(Locale(language))
+            context.createConfigurationContext(config)
+        } catch (e: Exception) {
+            context
+        }
+    }
+
+    private fun reportLabels(): ReportLabels {
+        // applicationContext لا يحمل لغة التطبيق المختارة — نستخدم سياقًا بلغة التطبيق.
+        val context = localizedContext()
+        return ReportLabels(
+        title = context.getString(R.string.report_title),
+        location = context.getString(R.string.report_label_location),
+        dateTime = context.getString(R.string.report_label_datetime),
+        technician = context.getString(R.string.report_label_technician),
+        summary = context.getString(R.string.report_label_summary),
+        summaryOk = context.getString(R.string.report_summary_ok),
+        summaryMinor = context.getString(R.string.report_summary_minor),
+        summaryFault = context.getString(R.string.report_summary_fault),
+        summaryExtra = context.getString(R.string.report_summary_extra),
+        equipmentSection = context.getString(R.string.report_section_equipment),
+        checklistSection = context.getString(R.string.report_section_checklist),
+        photosSection = context.getString(R.string.report_section_photos),
+        notesSection = context.getString(R.string.report_section_notes),
+        colEquipment = context.getString(R.string.report_col_equipment),
+        colModel = context.getString(R.string.report_col_model),
+        colHours = context.getString(R.string.report_col_hours),
+        colPressure = context.getString(R.string.report_col_pressure),
+        colStatus = context.getString(R.string.report_col_status),
+        colNotes = context.getString(R.string.report_col_notes),
+        colItem = context.getString(R.string.report_col_item),
+        colItemNotes = context.getString(R.string.report_col_item_notes),
+        ok = context.getString(R.string.chk_ok),
+        minor = context.getString(R.string.chk_minor),
+        fault = context.getString(R.string.chk_fault),
+        eqRunning = context.getString(R.string.report_eq_running),
+        eqStopped = context.getString(R.string.report_eq_stopped),
+        eqFault = context.getString(R.string.chk_fault),
+        kindNames = mapOf(
+            "MAIN_PUMP" to context.getString(R.string.kind_main_pump),
+            "SUBMERSIBLE_PUMP" to context.getString(R.string.kind_submersible),
+            "FILTER" to context.getString(R.string.kind_filter),
+        ),
+        photoLabel = context.getString(R.string.report_photo_line),
+        footer = context.getString(R.string.report_footer),
+        emptyEquipment = context.getString(R.string.report_empty_equipment),
+        emptyPhotos = context.getString(R.string.report_empty_photos),
+        )
     }
 
     private fun typeOrder(type: NodeType): Int = when (type) {

@@ -79,4 +79,41 @@
     <string name="lang_english">English</string>
     <string name="continue_label">متابعة</string>
     <string name="home_greeting">أهلاً، %1$s</string>
+
+    <!-- Checklist -->
+    <string name="checklist_add_item">إضافة بند</string>
+    <string name="checklist_edit_item">تعديل البند</string>
+    <string name="checklist_item_name">اسم البند</string>
+    <string name="checklist_note_label">ملاحظات على البند</string>
+    <string name="checklist_custom_badge">بند مخصص</string>
+    <string name="checklist_status_label">حالة البند</string>
+
+    <!-- ورقة التقرير -->
+    <string name="report_title">تقرير زيارة صيانة</string>
+    <string name="report_label_location">الموقع</string>
+    <string name="report_label_datetime">التاريخ والوقت</string>
+    <string name="report_label_technician">الفني</string>
+    <string name="report_label_summary">ملخص الحالة</string>
+    <string name="report_summary_ok">سليمة: %1$d</string>
+    <string name="report_summary_minor">ملاحظات: %1$d</string>
+    <string name="report_summary_fault">أعطال: %1$d</string>
+    <string name="report_summary_extra">معدات: %1$d • صور: %2$d</string>
+    <string name="report_section_equipment">المعدات والقراءات</string>
+    <string name="report_section_checklist">قائمة الفحص</string>
+    <string name="report_section_photos">الصور المرفقة</string>
+    <string name="report_section_notes">ملاحظات الزيارة</string>
+    <string name="report_col_equipment">المعدة</string>
+    <string name="report_col_model">الموديل</string>
+    <string name="report_col_hours">ساعات التشغيل</string>
+    <string name="report_col_pressure">الضغط (bar)</string>
+    <string name="report_col_status">الحالة</string>
+    <string name="report_col_notes">ملاحظات</string>
+    <string name="report_col_item">البند</string>
+    <string name="report_col_item_notes">الملاحظات</string>
+    <string name="report_eq_running">تعمل</string>
+    <string name="report_eq_stopped">متوقفة</string>
+    <string name="report_photo_line">صورة</string>
+    <string name="report_footer">تم إنشاء هذا التقرير آليًا بواسطة ProTrack</string>
+    <string name="report_empty_equipment">لا توجد معدات مسجلة</string>
+    <string name="report_empty_photos">لا توجد صور مرفقة</string>
 </resources>

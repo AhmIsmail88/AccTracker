@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         VisitEntity::class, VisitEquipmentEntity::class, VisitChecklistEntity::class,
         VisitPhotoEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,6 +34,16 @@ abstract class AppDatabase : RoomDatabase() {
                         "`lat` REAL, `lon` REAL, `accuracyM` REAL, " +
                         "`sha256` TEXT NOT NULL, `captureSig` TEXT NOT NULL)",
                 )
+            }
+        }
+
+        /** v3 → v4: حقول البنود القابلة للتعديل (اسم مخصص + ترتيب). */
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `visit_checklist_item` ADD COLUMN `itemName` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `visit_checklist_item` ADD COLUMN `isCustom` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `visit_checklist_item` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE `visit_checklist_item` SET `sortOrder` = `id`")
             }
         }
     }

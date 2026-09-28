@@ -39,10 +39,10 @@ interface VisitDao {
     @Query("SELECT * FROM visit_equipment WHERE visitRefId = :visitRefId ORDER BY id")
     suspend fun equipmentOnce(visitRefId: Long): List<VisitEquipmentEntity>
 
-    @Query("SELECT * FROM visit_checklist_item WHERE visitRefId = :visitRefId ORDER BY id")
+    @Query("SELECT * FROM visit_checklist_item WHERE visitRefId = :visitRefId ORDER BY sortOrder, id")
     fun checklistFlow(visitRefId: Long): Flow<List<VisitChecklistEntity>>
 
-    @Query("SELECT * FROM visit_checklist_item WHERE visitRefId = :visitRefId ORDER BY id")
+    @Query("SELECT * FROM visit_checklist_item WHERE visitRefId = :visitRefId ORDER BY sortOrder, id")
     suspend fun checklistOnce(visitRefId: Long): List<VisitChecklistEntity>
 
     @Query("SELECT * FROM visit_photo WHERE visitRefId = :visitRefId ORDER BY id")

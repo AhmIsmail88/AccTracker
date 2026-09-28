@@ -37,6 +37,9 @@ data class VisitChecklistEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val visitRefId: Long,
     val itemCode: String,
+    val itemName: String = "",
+    val isCustom: Boolean = false,
+    val sortOrder: Long = 0,
     val status: String = "OK",
     val note: String = "",
 )

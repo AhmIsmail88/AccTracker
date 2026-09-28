@@ -18,8 +18,10 @@ class VisitRepository(private val dao: VisitDao) {
         val id = dao.insertVisit(
             VisitEntity(visitId = visitId, locationCode = locationCode, startedAt = now.toString()),
         )
-        ChecklistCatalog.items.forEach { item ->
-            dao.insertChecklist(VisitChecklistEntity(visitRefId = id, itemCode = item.code))
+        ChecklistCatalog.items.forEachIndexed { index, item ->
+            dao.insertChecklist(
+                VisitChecklistEntity(visitRefId = id, itemCode = item.code, sortOrder = (index + 1).toLong()),
+            )
         }
         return id
     }
@@ -63,6 +65,24 @@ class VisitRepository(private val dao: VisitDao) {
     suspend fun updateEquipment(entity: VisitEquipmentEntity) = dao.updateEquipment(entity)
 
     suspend fun updateChecklist(entity: VisitChecklistEntity) = dao.updateChecklist(entity)
+
+    /** إضافة بند مخصص (من الميدان) — يظهر آخر القائمة. */
+    suspend fun addChecklistItem(visitRefId: Long, name: String, status: String, note: String) {
+        val existing = dao.checklistOnce(visitRefId)
+        val customCount = existing.count { it.isCustom }
+        val nextOrder = (existing.maxOfOrNull { it.sortOrder } ?: 0L) + 1
+        dao.insertChecklist(
+            VisitChecklistEntity(
+                visitRefId = visitRefId,
+                itemCode = "CUSTOM-" + (customCount + 1),
+                itemName = name.trim(),
+                isCustom = true,
+                sortOrder = nextOrder,
+                status = status,
+                note = note.trim(),
+            ),
+        )
+    }
 
     suspend fun setNotes(id: Long, notes: String) = dao.setNotes(id, notes)
 

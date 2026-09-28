@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,11 +29,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -406,49 +411,212 @@ private fun EquipmentStep(
 @Composable
 private fun ChecklistStep(viewModel: VisitViewModel) {
     val checklist by viewModel.checklist.collectAsState()
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(checklist, key = { it.id }) { item ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+    var showAddDialog by remember { mutableStateOf(false) }
+    var editTarget by remember { mutableStateOf<VisitChecklistEntity?>(null) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.visit_checklist_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Button(onClick = { showAddDialog = true }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.checklist_add_item))
+            }
+        }
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(checklist, key = { it.id }) { item ->
+                ChecklistItemCard(
+                    item = item,
+                    name = checklistDisplayName(item),
+                    onStatus = { status -> viewModel.setChecklistStatus(item, status) },
+                    onEdit = { editTarget = item },
+                )
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        ChecklistItemDialog(
+            title = stringResource(R.string.checklist_add_item),
+            initialName = "",
+            initialStatus = "OK",
+            initialNote = "",
+            requireName = true,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, status, note ->
+                if (name.isNotBlank()) viewModel.addChecklistItem(name, status, note)
+                showAddDialog = false
+            },
+        )
+    }
+
+    editTarget?.let { item ->
+        ChecklistItemDialog(
+            title = stringResource(R.string.checklist_edit_item),
+            initialName = checklistDisplayName(item),
+            initialStatus = item.status,
+            initialNote = item.note,
+            requireName = true,
+            onDismiss = { editTarget = null },
+            onConfirm = { name, status, note ->
+                viewModel.saveChecklistItem(item, name, status, note)
+                editTarget = null
+            },
+        )
+    }
+}
+
+private fun checklistDisplayName(item: VisitChecklistEntity): String =
+    if (item.itemName.isNotBlank()) item.itemName else ChecklistCatalog.nameFor(item.itemCode)
+
+@Composable
+private fun ChecklistItemCard(
+    item: VisitChecklistEntity,
+    name: String,
+    onStatus: (String) -> Unit,
+    onEdit: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
+                    Text(name, style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = ChecklistCatalog.nameFor(item.itemCode),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = item.itemCode,
+                        text = if (item.isCustom) stringResource(R.string.checklist_custom_badge) else item.itemCode,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
-                ChecklistStatusButton(status = item.status) { viewModel.cycleChecklist(item) }
+                ChecklistStatusDropdown(status = item.status, onSelect = onStatus)
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.checklist_edit_item),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (item.note.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "📝 " + item.note,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ChecklistStatusButton(status: String, onClick: () -> Unit) {
-    val label = when (status) {
-        "OK" -> stringResource(R.string.chk_ok)
-        "MINOR" -> stringResource(R.string.chk_minor)
-        else -> stringResource(R.string.chk_fault)
+private fun ChecklistStatusDropdown(status: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Button(
+            onClick = { expanded = true },
+            colors = ButtonDefaults.buttonColors(containerColor = checklistStatusColor(status)),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Text(checklistStatusLabel(status))
+            Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            listOf("OK", "MINOR", "FAULT").forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(checklistStatusLabel(option)) },
+                    onClick = {
+                        expanded = false
+                        onSelect(option)
+                    },
+                )
+            }
+        }
     }
-    val color = when (status) {
-        "OK" -> MaterialTheme.colorScheme.primary
-        "MINOR" -> Color(0xFFB26A00)
-        else -> MaterialTheme.colorScheme.error
-    }
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = color),
-    ) {
-        Text(label)
-    }
+}
+
+@Composable
+private fun checklistStatusLabel(status: String): String = when (status) {
+    "OK" -> stringResource(R.string.chk_ok)
+    "MINOR" -> stringResource(R.string.chk_minor)
+    else -> stringResource(R.string.chk_fault)
+}
+
+private fun checklistStatusColor(status: String): Color = when (status) {
+    "OK" -> Color(0xFF2E7D32)
+    "MINOR" -> Color(0xFFB26A00)
+    else -> Color(0xFFC62828)
+}
+
+@Composable
+private fun ChecklistItemDialog(
+    title: String,
+    initialName: String,
+    initialStatus: String,
+    initialNote: String,
+    requireName: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String) -> Unit,
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var status by remember { mutableStateOf(initialStatus) }
+    var note by remember { mutableStateOf(initialNote) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.checklist_item_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = stringResource(R.string.checklist_status_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+                )
+                ChecklistStatusDropdown(status = status, onSelect = { status = it })
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text(stringResource(R.string.checklist_note_label)) },
+                    minLines = 2,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name, status, note) },
+                enabled = !requireName || name.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
 }
 
 @Composable
@@ -477,9 +645,12 @@ private fun ReviewStep(
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(modifier = Modifier.height(8.dp))
-        visit?.let {
+        val locationOptions by viewModel.locationOptions.collectAsState()
+        visit?.let { activeVisit ->
+            val displayName = locationOptions.firstOrNull { it.code == activeVisit.locationCode }?.name
+                ?: activeVisit.locationCode
             Text(
-                text = stringResource(R.string.visit_location_label, it.locationCode),
+                text = stringResource(R.string.visit_location_label, displayName),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }

@@ -8,14 +8,19 @@ import com.protrack.app.domain.export.ExportPhoto
 import com.protrack.app.domain.export.ExportVisit
 import com.protrack.app.domain.export.JcaPackageSigner
 import com.protrack.app.domain.export.PackageBuilder
+import com.protrack.app.domain.export.ReportLabels
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.util.Base64
 import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
 
 /**
  * يبني حزمة زيارة كاملة (بنفس مسار التصدير في التطبيق) ويكتبها كـ artifact
@@ -40,6 +45,26 @@ class PackageBuilderTest {
             accuracyM = 8.0,
         )
 
+        val checklist = mutableListOf<ExportChecklist>()
+        (1..12).forEach { i ->
+            checklist.add(
+                ExportChecklist(
+                    itemCode = "CHK-" + i.toString().padStart(2, '0'),
+                    status = if (i == 2) "MINOR" else "OK",
+                    note = if (i == 2) "اهتزاز بسيط — يحتاج متابعة" else "",
+                    itemName = "بند فحص رقم $i",
+                ),
+            )
+        }
+        checklist.add(
+            ExportChecklist(
+                itemCode = "CUSTOM-1",
+                status = "FAULT",
+                note = "كابل تالف يحتاج استبدال",
+                itemName = "فحص كابل التغذية الرئيسي",
+            ),
+        )
+
         val bytes = builder.build(
             meta = ExportMeta(
                 packageId = "11111111-2222-4333-8444-555555555555",
@@ -61,13 +86,7 @@ class PackageBuilderTest {
                 ExportEquipment("MAIN_PUMP", "01", "ABC-500", 2340.0, 5.8, "RUNNING", ""),
                 ExportEquipment("MAIN_PUMP", "02", "ABC-500", 2410.0, 5.7, "RUNNING", ""),
             ),
-            checklist = (1..12).map { i ->
-                ExportChecklist(
-                    "CHK-" + i.toString().padStart(2, '0'),
-                    if (i == 2) "MINOR" else "OK",
-                    "",
-                )
-            },
+            checklist = checklist,
             locations = listOf(
                 ExportLocation("PRJ-001", "PROJECT", null, "مشروع الرياض", "ACTIVE", "2026-09-20T08:00:00+03:00"),
                 ExportLocation("RGN-001", "REGION", "PRJ-001", "المنطقة الشرقية", "ACTIVE", "2026-09-20T08:01:00+03:00"),
@@ -75,6 +94,9 @@ class PackageBuilderTest {
                 ExportLocation("LOC-001", "LOCATION", "ZN-001", "غرفة المضخات الرئيسية", "ACTIVE", "2026-09-20T08:03:00+03:00"),
             ),
             photos = listOf(photo),
+            technician = "أحمد — فني أول",
+            appVersion = "0.3.0",
+            labels = ReportLabels(kindNames = mapOf("MAIN_PUMP" to "مضخات رئيسية")),
         )
 
         assertTrue(bytes.isNotEmpty())
@@ -106,9 +128,39 @@ class PackageBuilderTest {
                 verify(Base64.getDecoder().decode(sigB64))
             }
             assertTrue(verified)
+
+            // فحص محتوى visit.xlsx: ورقة Report أولًا + الشيتات الآلية مخفية
+            val xlsxBytes = zf.getInputStream(zf.getEntry("visit.xlsx")).readBytes()
+            val parts = readInnerZip(xlsxBytes)
+            val wbXml = parts["xl/workbook.xml"] ?: ""
+            assertEquals(6, Regex("state=\"hidden\"").findAll(wbXml).count())
+
+            val reportXml = parts["xl/worksheets/sheet1.xml"] ?: ""
+            assertTrue(reportXml.contains("rightToLeft=\"1\""))
+            assertTrue(reportXml.contains("تقرير زيارة صيانة"))
+            assertTrue(reportXml.contains("أحمد — فني أول"))
+            assertTrue(reportXml.contains("محطة الشمال / غرفة المضخات الرئيسية"))
+            assertTrue(reportXml.contains("فحص كابل التغذية الرئيسي"))
+            assertTrue(reportXml.contains("كابل تالف يحتاج استبدال"))
+            assertTrue(reportXml.contains("سليمة: 11"))
+            assertFalse(reportXml.contains("CUSTOM-1"))
+            assertFalse(reportXml.contains("LOC-001"))
         }
 
         println("TEST-ARTIFACT: " + artifact.absolutePath)
+    }
+
+    private fun readInnerZip(bytes: ByteArray): Map<String, String> {
+        val out = mutableMapOf<String, String>()
+        ZipInputStream(ByteArrayInputStream(bytes)).use { zis ->
+            var entry = zis.nextEntry
+            while (entry != null) {
+                out[entry.name] = zis.readBytes().toString(Charsets.UTF_8)
+                zis.closeEntry()
+                entry = zis.nextEntry
+            }
+        }
+        return out
     }
 
     private fun fakeJpeg(): ByteArray =

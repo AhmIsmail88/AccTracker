@@ -79,4 +79,41 @@
     <string name="lang_english">English</string>
     <string name="continue_label">Continue</string>
     <string name="home_greeting">Welcome, %1$s</string>
+
+    <!-- Checklist -->
+    <string name="checklist_add_item">Add item</string>
+    <string name="checklist_edit_item">Edit item</string>
+    <string name="checklist_item_name">Item name</string>
+    <string name="checklist_note_label">Item notes</string>
+    <string name="checklist_custom_badge">Custom item</string>
+    <string name="checklist_status_label">Item status</string>
+
+    <!-- Report sheet -->
+    <string name="report_title">Maintenance Visit Report</string>
+    <string name="report_label_location">Location</string>
+    <string name="report_label_datetime">Date &amp; time</string>
+    <string name="report_label_technician">Technician</string>
+    <string name="report_label_summary">Summary</string>
+    <string name="report_summary_ok">OK: %1$d</string>
+    <string name="report_summary_minor">Notes: %1$d</string>
+    <string name="report_summary_fault">Faults: %1$d</string>
+    <string name="report_summary_extra">Equipment: %1$d • Photos: %2$d</string>
+    <string name="report_section_equipment">Equipment &amp; readings</string>
+    <string name="report_section_checklist">Checklist</string>
+    <string name="report_section_photos">Attached photos</string>
+    <string name="report_section_notes">Visit notes</string>
+    <string name="report_col_equipment">Equipment</string>
+    <string name="report_col_model">Model</string>
+    <string name="report_col_hours">Running hours</string>
+    <string name="report_col_pressure">Pressure (bar)</string>
+    <string name="report_col_status">Status</string>
+    <string name="report_col_notes">Notes</string>
+    <string name="report_col_item">Item</string>
+    <string name="report_col_item_notes">Notes</string>
+    <string name="report_eq_running">Running</string>
+    <string name="report_eq_stopped">Stopped</string>
+    <string name="report_photo_line">Photo</string>
+    <string name="report_footer">This report was generated automatically by ProTrack</string>
+    <string name="report_empty_equipment">No equipment recorded</string>
+    <string name="report_empty_photos">No photos attached</string>
 </resources>
