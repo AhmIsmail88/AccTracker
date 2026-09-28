@@ -4,7 +4,10 @@ __pycache__/
 .venv/
 venv/
 tests/_tmp/
+.pytest_cache/
 .idea/
 .vscode/
 Thumbs.db
 .DS_Store
+web/backend/data/
+web/backend/seed/

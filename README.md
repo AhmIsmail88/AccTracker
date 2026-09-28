@@ -3,30 +3,36 @@
 مستودع المشروع: تطبيق **Android** للفني (أوفلاين) + تطبيق **Web** للمهندس، يتبادلان
 **Visit Package** (تقرير Excel + صور موقعة + توقيع رقمي للجهاز).
 
-> المرجع الأساسي للمعمارية وخطة التنفيذ: `ARCHITECTURE.md` (في الجذر). لا يُعدَّل من الأدوات.
+> المرجع الأساسي للمعمارية وخطة التنفيذ: `ARCHITECTURE.md` (في الجذر).
 
-## الحالة الحالية — Phase 0 (Contract) ✅
+## الحالة الحالية
 
-- `contract/` — مخططات JSON + قائمة بنود العنبر + عينات الحزم.
-- `tools/` — بناء حزم نموذجية + Validator + أدوات توقيع للتطوير.
-  تعمل ببايثون القياسي بدون تبعيات خارجية (فسح التوقيع يستخدم `cryptography` إن توفرت، وإلا تنفيذاً مكافئاً داخلياً).
-- `tests/` — فحوص آلية للسيناريوهات: `PASS / FAIL / DUPLICATE / REJECT / FLAG`.
+- ✅ **Phase 0 (Contract):** مخططات العقد (`contract/`) + أدوات التحقق والبناء (`tools/`) + فحوص (`tests/`) — بلا تبعيات خارجية.
+- ✅ **Phase 1 (Web Core):** باك-إند الويب (`web/backend/`): FastAPI + SQLite + Alembic + شجرة المواقع + استيراد الحزم ودمج التقسيم + مطابقة المعدات.
 
-## تشغيل سريع
+## تشغيل سريع — أدوات العقد (Phase 0)
 
 ```bash
-:: بناء الحزم النموذجية
 python tools/make_sample_package.py
-
-:: فحص حزمة (اختياري: --seen-db لمنع التكرار)
 python tools/validate_package.py contract/samples/valid_package.zip --seen-db tests/_tmp/seen.json
-
-:: كل الفحوص
 python tests/run_tests.py
 ```
 
+## تشغيل سريع — الويب (Phase 1)
+
+```bash
+cd web/backend
+py -3.12 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m alembic upgrade head
+.venv\Scripts\python -m uvicorn app.main:app --reload
+.venv\Scripts\python -m pytest
+```
+
+- API: `http://127.0.0.1:8000/api/health`
+- تفاصيل أكثر: `web/backend/README.md`.
+
 ## خريطة العمل القادمة
 
-- Phase 1: Web Core (FastAPI + SQLite + Locations Tree + Import Inbox).
-- Phase 2: Android MVP (شاشات الزيارة + إدارة المواقع + تصدير الحزمة).
-- راجع `ARCHITECTURE.md` §33/§34 للتفاصيل الكاملة.
+- Phase 2: Android MVP (إدارة المواقع + الزيارات + تصدير الحزمة).
+- Phase 3+: Manuals / Maintenance Engine / AI (راجع `ARCHITECTURE.md` §33/§34).
