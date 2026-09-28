@@ -1,7 +1,11 @@
 package com.protrack.app.ui.visit
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -53,16 +57,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.protrack.app.R
 import com.protrack.app.data.ExportOutcome
 import com.protrack.app.data.HierarchyRepository
 import com.protrack.app.data.PackageExporter
+import com.protrack.app.data.PhotoManager
 import com.protrack.app.data.VisitRepository
 import com.protrack.app.data.db.VisitChecklistEntity
 import com.protrack.app.data.db.VisitEquipmentEntity
+import com.protrack.app.data.db.VisitPhotoEntity
 import com.protrack.app.domain.ChecklistCatalog
+import com.protrack.app.ui.capture.CameraCaptureScreen
 import java.io.File
 
 private const val KIND_MAIN_PUMP = "MAIN_PUMP"
@@ -74,16 +82,64 @@ private const val KIND_FILTER = "FILTER"
 fun VisitScreen(
     hierarchyRepository: HierarchyRepository,
     visitRepository: VisitRepository,
+    photoManager: PhotoManager,
     exporter: PackageExporter,
     onBack: () -> Unit,
 ) {
     val viewModel: VisitViewModel = viewModel(
-        factory = VisitViewModel.Factory(hierarchyRepository, visitRepository, exporter),
+        factory = VisitViewModel.Factory(hierarchyRepository, visitRepository, photoManager, exporter),
     )
     val step by viewModel.step.collectAsState()
     val busy by viewModel.busy.collectAsState()
     val outcome by viewModel.exportOutcome.collectAsState()
+    val photos by viewModel.photos.collectAsState()
     var notes by rememberSaveable { mutableStateOf("") }
+
+    val context = LocalContext.current
+    var cameraTargetRef by remember { mutableStateOf<String?>(null) }
+    var pendingCameraRef by remember { mutableStateOf<String?>(null) }
+    var showPermissionMessage by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { result ->
+        if (result[Manifest.permission.CAMERA] == true) {
+            cameraTargetRef = pendingCameraRef
+        } else {
+            showPermissionMessage = true
+        }
+        pendingCameraRef = null
+    }
+
+    val startCapture: (String) -> Unit = { ref ->
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            cameraTargetRef = ref
+        } else {
+            pendingCameraRef = ref
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
+    }
+
+    val activeCameraRef = cameraTargetRef
+    if (activeCameraRef != null) {
+        CameraCaptureScreen(
+            onCaptured = { file ->
+                viewModel.attachPhoto("EQUIPMENT", activeCameraRef, file)
+                cameraTargetRef = null
+            },
+            onCancel = { cameraTargetRef = null },
+            fileFactory = { viewModel.newPhotoFile() ?: File(context.filesDir, "photo.jpg") },
+        )
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -120,7 +176,11 @@ fun VisitScreen(
             ) {
                 when (step) {
                     VisitViewModel.Step.LOCATION -> LocationStep(viewModel)
-                    VisitViewModel.Step.EQUIPMENT -> EquipmentStep(viewModel)
+                    VisitViewModel.Step.EQUIPMENT -> EquipmentStep(
+                        viewModel = viewModel,
+                        photos = photos,
+                        onAddPhoto = startCapture,
+                    )
                     VisitViewModel.Step.CHECKLIST -> ChecklistStep(viewModel)
                     VisitViewModel.Step.REVIEW -> ReviewStep(
                         viewModel = viewModel,
@@ -128,6 +188,7 @@ fun VisitScreen(
                         onNotesChange = { notes = it },
                         busy = busy,
                         outcome = outcome,
+                        photosCount = photos.size,
                     )
                 }
             }
@@ -139,6 +200,18 @@ fun VisitScreen(
                 notes = notes,
             )
         }
+    }
+
+    if (showPermissionMessage) {
+        AlertDialog(
+            onDismissRequest = { showPermissionMessage = false },
+            title = { Text(stringResource(R.string.camera_permission_denied)) },
+            confirmButton = {
+                TextButton(onClick = { showPermissionMessage = false }) {
+                    Text(stringResource(R.string.done))
+                }
+            },
+        )
     }
 }
 
@@ -241,7 +314,11 @@ private fun LocationStep(viewModel: VisitViewModel) {
 }
 
 @Composable
-private fun EquipmentStep(viewModel: VisitViewModel) {
+private fun EquipmentStep(
+    viewModel: VisitViewModel,
+    photos: List<VisitPhotoEntity>,
+    onAddPhoto: (String) -> Unit,
+) {
     val equipment by viewModel.equipment.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var editTarget by remember { mutableStateOf<VisitEquipmentEntity?>(null) }
@@ -273,6 +350,7 @@ private fun EquipmentStep(viewModel: VisitViewModel) {
         } else {
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(equipment, key = { it.id }) { item ->
+                    val photoCount = photos.count { it.targetRef == "${item.kind}-${item.tag}" }
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -286,7 +364,8 @@ private fun EquipmentStep(viewModel: VisitViewModel) {
                             )
                             Text(
                                 text = "${item.kind} • ${item.runningHours ?: "-"} h • " +
-                                    "${item.pressureBar ?: "-"} bar • ${statusLabel(item.status)}",
+                                    "${item.pressureBar ?: "-"} bar • ${statusLabel(item.status)}" +
+                                    if (photoCount > 0) " • 📷 $photoCount" else "",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -310,6 +389,11 @@ private fun EquipmentStep(viewModel: VisitViewModel) {
     editTarget?.let { entity ->
         EquipmentEditDialog(
             entity = entity,
+            photos = photos.filter { it.targetRef == "${entity.kind}-${entity.tag}" },
+            onAddPhoto = {
+                onAddPhoto("${entity.kind}-${entity.tag}")
+                editTarget = null
+            },
             onDismiss = { editTarget = null },
             onSave = { updated ->
                 viewModel.updateEquipment(updated)
@@ -374,6 +458,7 @@ private fun ReviewStep(
     onNotesChange: (String) -> Unit,
     busy: Boolean,
     outcome: ExportOutcome?,
+    photosCount: Int,
 ) {
     val equipment by viewModel.equipment.collectAsState()
     val checklist by viewModel.checklist.collectAsState()
@@ -405,6 +490,10 @@ private fun ReviewStep(
         )
         Text(
             text = stringResource(R.string.visit_issues_count, issues),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = stringResource(R.string.visit_photos_count, photosCount),
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -527,6 +616,8 @@ private fun AddEquipmentDialog(
 @Composable
 private fun EquipmentEditDialog(
     entity: VisitEquipmentEntity,
+    photos: List<VisitPhotoEntity>,
+    onAddPhoto: () -> Unit,
     onDismiss: () -> Unit,
     onSave: (VisitEquipmentEntity) -> Unit,
 ) {
@@ -539,7 +630,7 @@ private fun EquipmentEditDialog(
         onDismissRequest = onDismiss,
         title = { Text("${entity.tag} — ${entity.model}") },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = hours,
                     onValueChange = { hours = it },
@@ -574,6 +665,33 @@ private fun EquipmentEditDialog(
                     label = { Text(stringResource(R.string.visit_note)) },
                     singleLine = true,
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.photos_label) + " (" + photos.size + ")",
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                if (photos.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.no_photos),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    photos.forEach { photo ->
+                        Text(
+                            text = File(photo.filePath).name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = onAddPhoto,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.add_photo))
+                }
             }
         },
         confirmButton = {

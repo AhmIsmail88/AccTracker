@@ -44,6 +44,7 @@ fun AppNav(container: AppContainer) {
             VisitScreen(
                 hierarchyRepository = container.repository,
                 visitRepository = container.visitRepository,
+                photoManager = container.photoManager,
                 exporter = container.exporter,
                 onBack = { navController.popBackStack() },
             )

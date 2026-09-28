@@ -18,6 +18,9 @@ interface VisitDao {
     @Insert
     suspend fun insertChecklist(entity: VisitChecklistEntity): Long
 
+    @Insert
+    suspend fun insertPhoto(entity: VisitPhotoEntity): Long
+
     @Update
     suspend fun updateEquipment(entity: VisitEquipmentEntity)
 
@@ -41,6 +44,12 @@ interface VisitDao {
 
     @Query("SELECT * FROM visit_checklist_item WHERE visitRefId = :visitRefId ORDER BY id")
     suspend fun checklistOnce(visitRefId: Long): List<VisitChecklistEntity>
+
+    @Query("SELECT * FROM visit_photo WHERE visitRefId = :visitRefId ORDER BY id")
+    fun photosFlow(visitRefId: Long): Flow<List<VisitPhotoEntity>>
+
+    @Query("SELECT * FROM visit_photo WHERE visitRefId = :visitRefId ORDER BY id")
+    suspend fun photosOnce(visitRefId: Long): List<VisitPhotoEntity>
 
     @Query("UPDATE visit SET notes = :notes WHERE id = :id")
     suspend fun setNotes(id: Long, notes: String)

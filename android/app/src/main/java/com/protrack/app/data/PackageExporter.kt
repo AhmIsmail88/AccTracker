@@ -6,6 +6,7 @@ import com.protrack.app.domain.export.ExportChecklist
 import com.protrack.app.domain.export.ExportEquipment
 import com.protrack.app.domain.export.ExportLocation
 import com.protrack.app.domain.export.ExportMeta
+import com.protrack.app.domain.export.ExportPhoto
 import com.protrack.app.domain.export.ExportVisit
 import com.protrack.app.domain.export.PackageBuilder
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,7 @@ data class ExportOutcome(
 )
 
 /**
- * تصدير حزمة الزيارة: يبني visit.xlsx + manifest.json + manifest.sig داخل ZIP
+ * تصدير حزمة الزيارة: يبني visit.xlsx + الصور + manifest.json + manifest.sig داخل ZIP
  * في مجلد التطبيق الخاص (packages/) ثم يعلّم العناصر المُصدَّرة كـ SYNCED.
  */
 class PackageExporter(
@@ -44,6 +45,26 @@ class PackageExporter(
 
             val equipment = visitRepository.equipmentForOnce(visitId)
             val checklist = visitRepository.checklistForOnce(visitId)
+
+            val photos = visitRepository.photosForOnce(visitId).mapNotNull { p ->
+                try {
+                    val f = File(p.filePath)
+                    if (!f.exists()) {
+                        null
+                    } else {
+                        ExportPhoto(
+                            fileName = f.name,
+                            bytes = f.readBytes(),
+                            takenAt = p.takenAt,
+                            lat = p.lat ?: 0.0,
+                            lon = p.lon ?: 0.0,
+                            accuracyM = p.accuracyM ?: 0.0,
+                        )
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
 
             val chain = hierarchyRepository.locationChain(visit.locationCode)
             val pending = hierarchyRepository.pendingNodes()
@@ -87,7 +108,7 @@ class PackageExporter(
                         name = it.name, status = it.status, updatedAt = it.updatedAt,
                     )
                 },
-                photos = emptyList(), // الكاميرا تُوصل في الجزء التالي
+                photos = photos,
             )
 
             val dir = File(context.getExternalFilesDir(null), "packages").apply { mkdirs() }

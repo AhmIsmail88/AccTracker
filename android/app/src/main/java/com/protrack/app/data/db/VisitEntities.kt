@@ -40,3 +40,18 @@ data class VisitChecklistEntity(
     val status: String = "OK",
     val note: String = "",
 )
+
+@Entity(tableName = "visit_photo")
+data class VisitPhotoEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val visitRefId: Long,
+    val targetType: String,
+    val targetRef: String,
+    val filePath: String,
+    val takenAt: String,
+    val lat: Double? = null,
+    val lon: Double? = null,
+    val accuracyM: Double? = null,
+    val sha256: String,
+    val captureSig: String,
+)

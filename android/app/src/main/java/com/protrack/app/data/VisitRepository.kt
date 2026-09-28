@@ -4,6 +4,7 @@ import com.protrack.app.data.db.VisitChecklistEntity
 import com.protrack.app.data.db.VisitDao
 import com.protrack.app.data.db.VisitEntity
 import com.protrack.app.data.db.VisitEquipmentEntity
+import com.protrack.app.data.db.VisitPhotoEntity
 import com.protrack.app.domain.ChecklistCatalog
 import kotlinx.coroutines.flow.Flow
 import java.time.OffsetDateTime
@@ -34,6 +35,14 @@ class VisitRepository(private val dao: VisitDao) {
     fun checklist(visitRefId: Long): Flow<List<VisitChecklistEntity>> = dao.checklistFlow(visitRefId)
 
     suspend fun checklistForOnce(visitRefId: Long): List<VisitChecklistEntity> = dao.checklistOnce(visitRefId)
+
+    fun photos(visitRefId: Long): Flow<List<VisitPhotoEntity>> = dao.photosFlow(visitRefId)
+
+    suspend fun photosForOnce(visitRefId: Long): List<VisitPhotoEntity> = dao.photosOnce(visitRefId)
+
+    suspend fun addPhoto(entity: VisitPhotoEntity) {
+        dao.insertPhoto(entity)
+    }
 
     suspend fun addEquipment(visitRefId: Long, kind: String, model: String, quantity: Int) {
         val existing = dao.equipmentOnce(visitRefId)

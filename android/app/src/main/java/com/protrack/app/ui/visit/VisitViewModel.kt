@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.protrack.app.data.ExportOutcome
 import com.protrack.app.data.HierarchyRepository
 import com.protrack.app.data.PackageExporter
+import com.protrack.app.data.PhotoManager
 import com.protrack.app.data.VisitRepository
 import com.protrack.app.data.db.VisitChecklistEntity
 import com.protrack.app.data.db.VisitEntity
 import com.protrack.app.data.db.VisitEquipmentEntity
+import com.protrack.app.data.db.VisitPhotoEntity
 import com.protrack.app.domain.NodeType
 import com.protrack.app.domain.TreeBuilder
 import com.protrack.app.domain.TreeNode
@@ -22,12 +24,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 data class LocationOption(val code: String, val name: String, val path: String)
 
 class VisitViewModel(
     private val hierarchyRepository: HierarchyRepository,
     private val visitRepository: VisitRepository,
+    private val photoManager: PhotoManager,
     private val exporter: PackageExporter,
 ) : ViewModel() {
 
@@ -65,6 +69,11 @@ class VisitViewModel(
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else visitRepository.checklist(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val photos: StateFlow<List<VisitPhotoEntity>> = _visitId
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else visitRepository.photos(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun chooseLocation(code: String) {
         if (_visitId.value != null) return
         viewModelScope.launch {
@@ -89,6 +98,16 @@ class VisitViewModel(
             else -> "OK"
         }
         viewModelScope.launch { visitRepository.updateChecklist(item.copy(status = next)) }
+    }
+
+    fun newPhotoFile(): File? {
+        val id = _visitId.value ?: return null
+        return photoManager.newPhotoFile(id)
+    }
+
+    fun attachPhoto(targetType: String, targetRef: String, file: File) {
+        val id = _visitId.value ?: return
+        viewModelScope.launch { photoManager.attachPhoto(id, targetType, targetRef, file) }
     }
 
     fun next() {
@@ -144,10 +163,11 @@ class VisitViewModel(
     class Factory(
         private val hierarchyRepository: HierarchyRepository,
         private val visitRepository: VisitRepository,
+        private val photoManager: PhotoManager,
         private val exporter: PackageExporter,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            VisitViewModel(hierarchyRepository, visitRepository, exporter) as T
+            VisitViewModel(hierarchyRepository, visitRepository, photoManager, exporter) as T
     }
 }

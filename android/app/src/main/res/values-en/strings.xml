@@ -47,6 +47,7 @@
     <string name="visit_new_visit">New visit</string>
     <string name="visit_equipment_count">Equipment count: %1$d</string>
     <string name="visit_issues_count">Items needing attention: %1$d</string>
+    <string name="visit_photos_count">Photos: %1$d</string>
     <string name="visit_notes_label">Visit notes</string>
     <string name="visit_no_equipment">No equipment yet — tap "Add equipment"</string>
     <string name="status_running">Running</string>
@@ -60,4 +61,12 @@
     <string name="kind_filter">Filters</string>
     <string name="visit_location_label">Location: %1$s</string>
     <string name="done">Done</string>
+
+    <string name="add_photo">Add photo</string>
+    <string name="photos_label">Photos</string>
+    <string name="no_photos">No photos yet</string>
+    <string name="capture">Capture</string>
+    <string name="close">Close</string>
+    <string name="camera_permission_denied">Camera permission is required from system settings</string>
+    <string name="camera_unavailable">Camera is not available on this device</string>
 </resources>

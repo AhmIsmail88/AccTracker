@@ -47,6 +47,7 @@
     <string name="visit_new_visit">زيارة جديدة</string>
     <string name="visit_equipment_count">عدد المعدات: %1$d</string>
     <string name="visit_issues_count">بنود تحتاج متابعة: %1$d</string>
+    <string name="visit_photos_count">الصور: %1$d</string>
     <string name="visit_notes_label">ملاحظات الزيارة</string>
     <string name="visit_no_equipment">لسه مفيش معدات — اضغط "إضافة معدات"</string>
     <string name="status_running">تشغيل</string>
@@ -60,4 +61,12 @@
     <string name="kind_filter">فلاتر</string>
     <string name="visit_location_label">الموقع: %1$s</string>
     <string name="done">تم</string>
+
+    <string name="add_photo">إضافة صورة</string>
+    <string name="photos_label">الصور</string>
+    <string name="no_photos">مفيش صور بعد</string>
+    <string name="capture">التقاط</string>
+    <string name="close">إغلاق</string>
+    <string name="camera_permission_denied">لازم تسمح بإذن الكاميرا من إعدادات النظام</string>
+    <string name="camera_unavailable">الكاميرا غير متاحة على الجهاز</string>
 </resources>

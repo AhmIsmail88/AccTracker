@@ -5,7 +5,9 @@ import android.content.Context
 import androidx.room.Room
 import com.protrack.app.data.DeviceInfoProvider
 import com.protrack.app.data.HierarchyRepository
+import com.protrack.app.data.LocationProvider
 import com.protrack.app.data.PackageExporter
+import com.protrack.app.data.PhotoManager
 import com.protrack.app.data.VisitRepository
 import com.protrack.app.data.db.AppDatabase
 
@@ -16,16 +18,21 @@ class ProTrackApp : Application() {
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
-    // ملاحظة: قبل الإطلاق الرسمي تُستبدل بـ migrations حقيقية بدل الحذف عند تغيير الإصدار.
+    // ملاحظة: fallbackToDestructiveMigration شبكة أمان فقط — الترحيلات الحقيقية مُضافة.
     private val database: AppDatabase = Room.databaseBuilder(
         appContext,
         AppDatabase::class.java,
         "protrack.db",
-    ).fallbackToDestructiveMigration().build()
+    ).addMigrations(AppDatabase.MIGRATION_2_3)
+        .fallbackToDestructiveMigration()
+        .build()
 
     val repository: HierarchyRepository = HierarchyRepository(database.hierarchyDao())
     val visitRepository: VisitRepository = VisitRepository(database.visitDao())
 
     private val deviceInfo = DeviceInfoProvider(appContext)
+    private val locationProvider = LocationProvider(appContext)
+
+    val photoManager = PhotoManager(appContext, visitRepository, deviceInfo, locationProvider)
     val exporter: PackageExporter = PackageExporter(appContext, visitRepository, repository, deviceInfo)
 }
