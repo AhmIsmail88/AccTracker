@@ -17,6 +17,12 @@ from app.main import app  # noqa: E402
 def _reset():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        conn.exec_driver_sql(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS manual_chunk_fts "
+            "USING fts5(text, manual_id UNINDEXED, tokenize='unicode61')"
+        )
+        conn.exec_driver_sql("DELETE FROM manual_chunk_fts")
 
 
 @pytest.fixture()

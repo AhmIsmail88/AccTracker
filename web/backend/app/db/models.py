@@ -192,3 +192,62 @@ class ImportedPackage(Base):
     status = Column(String, nullable=True)          # PASS / FLAG
     counts_json = Column(Text, nullable=True)
     imported_at = Column(String, nullable=False, default=utcnow_iso)
+
+
+# ============ Phase 3 — الـManuals (§6 / §18) ============
+
+class Manual(Base):
+    __tablename__ = "manual"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    manufacturer = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    equipment_kind = Column(String, nullable=True)
+    revision = Column(String, nullable=True)
+    file_path = Column(String, nullable=False)
+    sha256 = Column(String, unique=True, nullable=True)
+    uploaded_at = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="READY")
+
+
+class ManualSection(Base):
+    __tablename__ = "manual_section"
+
+    id = Column(Integer, primary_key=True)
+    manual_id = Column(Integer, ForeignKey("manual.id"), nullable=False)
+    page_start = Column(Integer, nullable=True)
+    page_end = Column(Integer, nullable=True)
+    section_title = Column(String, nullable=True)
+    text = Column(Text, nullable=False)
+
+
+class ManualChunk(Base):
+    __tablename__ = "manual_chunk"
+
+    id = Column(Integer, primary_key=True)
+    manual_id = Column(Integer, ForeignKey("manual.id"), nullable=False)
+    page = Column(Integer, nullable=True)
+    section_title = Column(String, nullable=True)
+    chunk_index = Column(Integer, nullable=True)
+    text = Column(Text, nullable=False)
+    embedding_ref = Column(Text, nullable=True)
+
+
+class MaintenanceRule(Base):
+    __tablename__ = "maintenance_rule"
+
+    id = Column(Integer, primary_key=True)
+    manual_id = Column(Integer, ForeignKey("manual.id"), nullable=True)
+    equipment_kind = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    maintenance_type = Column(String, nullable=True)
+    interval_hours = Column(Float, nullable=True)
+    interval_days = Column(Integer, nullable=True)
+    threshold_value = Column(Float, nullable=True)
+    threshold_unit = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    source_page = Column(Integer, nullable=True)
+    source_section = Column(String, nullable=True)
+    confidence = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="DRAFT")

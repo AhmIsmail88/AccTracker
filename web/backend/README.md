@@ -29,6 +29,7 @@ py -3.12 -m venv .venv
 | سجل الاستيراد | `GET /api/imports` |
 | الأصول | `GET /api/assets` · `GET /api/assets/{asset_code}` |
 | الزيارات | `GET /api/visits` · `GET /api/visits/{visit_id}` |
+| الـManuals | `POST /api/manuals` (رفع PDF) · `GET /api/manuals` · `GET /api/manuals/{id}` · `GET /api/manuals/{id}/chunks` · `GET /api/manuals/search?q=` |
 
 ## الفحوص
 
