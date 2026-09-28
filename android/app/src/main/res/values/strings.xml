@@ -116,4 +116,30 @@
     <string name="report_footer">تم إنشاء هذا التقرير آليًا بواسطة ProTrack</string>
     <string name="report_empty_equipment">لا توجد معدات مسجلة</string>
     <string name="report_empty_photos">لا توجد صور مرفقة</string>
+
+    <!-- v0.4: سجل الزيارات + الصور + الحذف -->
+    <string name="home_visits">سجل الزيارات</string>
+    <string name="visits_title">سجل الزيارات</string>
+    <string name="visits_empty">مفيش زيارات بعد — ابدأ زيارة جديدة</string>
+    <string name="visit_status_draft">مسودة</string>
+    <string name="visit_status_exported">مصدرة</string>
+    <string name="visit_resume">استئناف الزيارة</string>
+    <string name="visit_share_package">مشاركة الحزمة</string>
+    <string name="visit_package_missing">ملف الحزمة مش موجود على الجهاز</string>
+    <string name="visit_history_stats">معدات: %1$d • بنود تحتاج متابعة: %2$d • صور: %3$d</string>
+    <string name="photos_title">صور الزيارة</string>
+    <string name="photos_empty">مفيش صور بعد — التقط صور من المعدات أو من بنود الفحص</string>
+    <string name="photos_share">مشاركة الصورة</string>
+    <string name="photos_open">عرض الصور</string>
+    <string name="checklist_photo_add">صورة للبند</string>
+    <string name="checklist_delete_item">حذف البند</string>
+    <string name="checklist_delete_confirm">متأكد إنك عايز تحذف البند "%1$s"؟</string>
+    <string name="delete">حذف</string>
+    <string name="delete_node_confirm">متأكد إنك عايز تحذف "%1$s" نهائيًا؟</string>
+    <string name="delete_blocked_children">مينفعش تحذف العنصر — لسه فيه عناصر تحته. احذفهم الأول أو استخدم "تعطيل".</string>
+    <string name="delete_blocked_visits">مينفعش تحذف الموقع — فيه زيارات مسجلة عليه. استخدم "تعطيل" بدل الحذف.</string>
+    <string name="report_signature_by">إعداد وتوقيع الفني: %1$s</string>
+    <string name="report_signature_line">التوقيع: ________________</string>
+    <string name="visit_pick_location">اضغط لاختيار الموقع</string>
+    <string name="visit_add_location">إضافة موقع جديد</string>
 </resources>

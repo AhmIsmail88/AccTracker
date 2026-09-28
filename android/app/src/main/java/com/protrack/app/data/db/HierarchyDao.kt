@@ -80,4 +80,25 @@ interface HierarchyDao {
 
     @Query("UPDATE location SET syncState = 'SYNCED' WHERE code = :code")
     suspend fun markLocationSynced(code: String)
+
+    @Query("SELECT COUNT(*) FROM region WHERE projectCode = :code")
+    suspend fun regionCountUnderProject(code: String): Int
+
+    @Query("SELECT COUNT(*) FROM zone WHERE regionCode = :code")
+    suspend fun zoneCountUnderRegion(code: String): Int
+
+    @Query("SELECT COUNT(*) FROM location WHERE zoneCode = :code")
+    suspend fun locationCountUnderZone(code: String): Int
+
+    @Query("DELETE FROM project WHERE code = :code")
+    suspend fun deleteProject(code: String)
+
+    @Query("DELETE FROM region WHERE code = :code")
+    suspend fun deleteRegion(code: String)
+
+    @Query("DELETE FROM zone WHERE code = :code")
+    suspend fun deleteZone(code: String)
+
+    @Query("DELETE FROM location WHERE code = :code")
+    suspend fun deleteLocation(code: String)
 }

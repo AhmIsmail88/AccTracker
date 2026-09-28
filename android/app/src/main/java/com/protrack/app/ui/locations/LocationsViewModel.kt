@@ -3,9 +3,11 @@ package com.protrack.app.ui.locations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.protrack.app.data.DeleteNodeResult
 import com.protrack.app.data.HierarchyRepository
 import com.protrack.app.domain.NodeType
 import com.protrack.app.domain.TreeBuilder
+import com.protrack.app.domain.TreeNode
 import com.protrack.app.domain.TreeRow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +24,9 @@ data class LocationsUiState(
 class LocationsViewModel(private val repository: HierarchyRepository) : ViewModel() {
 
     private val expanded = MutableStateFlow<Set<String>>(emptySet())
+
+    private val _deleteResult = MutableStateFlow<String?>(null)
+    val deleteResult: StateFlow<String?> = _deleteResult
 
     val uiState: StateFlow<LocationsUiState> =
         combine(repository.data, expanded) { data, expandedCodes ->
@@ -46,6 +51,21 @@ class LocationsViewModel(private val repository: HierarchyRepository) : ViewMode
 
     fun setStatus(type: NodeType, code: String, status: String) {
         viewModelScope.launch { repository.setStatus(type, code, status) }
+    }
+
+    fun deleteNode(node: TreeNode) {
+        viewModelScope.launch {
+            val result = repository.deleteNode(node.type, node.code)
+            _deleteResult.value = when (result) {
+                DeleteNodeResult.DELETED -> null
+                DeleteNodeResult.BLOCKED_HAS_CHILDREN -> "children"
+                DeleteNodeResult.BLOCKED_HAS_VISITS -> "visits"
+            }
+        }
+    }
+
+    fun clearDeleteResult() {
+        _deleteResult.value = null
     }
 
     class Factory(private val repository: HierarchyRepository) : ViewModelProvider.Factory {

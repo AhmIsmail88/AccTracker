@@ -54,10 +54,12 @@ fun LocationsScreen(
 ) {
     val viewModel: LocationsViewModel = viewModel(factory = LocationsViewModel.Factory(repository))
     val state by viewModel.uiState.collectAsState()
+    val deleteResult by viewModel.deleteResult.collectAsState()
 
     var showAddProject by remember { mutableStateOf(false) }
     var actionNode by remember { mutableStateOf<TreeNode?>(null) }
     var editTarget by remember { mutableStateOf<EditTarget?>(null) }
+    var deleteAskNode by remember { mutableStateOf<TreeNode?>(null) }
 
     Scaffold(
         topBar = {
@@ -161,6 +163,53 @@ fun LocationsScreen(
                 viewModel.setStatus(node.type, node.code, newStatus)
                 actionNode = null
             },
+            onDelete = {
+                deleteAskNode = node
+                actionNode = null
+            },
+        )
+    }
+
+    deleteAskNode?.let { node ->
+        AlertDialog(
+            onDismissRequest = { deleteAskNode = null },
+            title = { Text(stringResource(R.string.delete)) },
+            text = { Text(stringResource(R.string.delete_node_confirm, node.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteNode(node)
+                        deleteAskNode = null
+                    },
+                ) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteAskNode = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    deleteResult?.let { reason ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearDeleteResult() },
+            title = { Text(stringResource(R.string.delete)) },
+            text = {
+                Text(
+                    when (reason) {
+                        "children" -> stringResource(R.string.delete_blocked_children)
+                        else -> stringResource(R.string.delete_blocked_visits)
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearDeleteResult() }) {
+                    Text(stringResource(R.string.done))
+                }
+            },
         )
     }
 
@@ -260,6 +309,7 @@ private fun ActionsDialog(
     onAddChild: () -> Unit,
     onRename: () -> Unit,
     onToggleStatus: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val childType = node.type.childType
     AlertDialog(
@@ -280,6 +330,12 @@ private fun ActionsDialog(
                         stringResource(
                             if (node.status == "ACTIVE") R.string.deactivate else R.string.activate,
                         ),
+                    )
+                }
+                TextButton(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.delete),
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }

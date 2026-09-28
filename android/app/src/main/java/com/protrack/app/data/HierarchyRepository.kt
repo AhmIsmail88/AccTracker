@@ -4,6 +4,7 @@ import com.protrack.app.data.db.HierarchyDao
 import com.protrack.app.data.db.LocationEntity
 import com.protrack.app.data.db.ProjectEntity
 import com.protrack.app.data.db.RegionEntity
+import com.protrack.app.data.db.VisitDao
 import com.protrack.app.data.db.ZoneEntity
 import com.protrack.app.domain.CodeGenerator
 import com.protrack.app.domain.NodeType
@@ -30,7 +31,13 @@ data class HierarchyNode(
     val syncState: String,
 )
 
-class HierarchyRepository(private val dao: HierarchyDao) {
+/** نتيجة محاولة حذف عنصر تقسيم. */
+enum class DeleteNodeResult { DELETED, BLOCKED_HAS_CHILDREN, BLOCKED_HAS_VISITS }
+
+class HierarchyRepository(
+    private val dao: HierarchyDao,
+    private val visitDao: VisitDao? = null,
+) {
 
     val data: Flow<HierarchyData> = combine(
         dao.projects(), dao.regions(), dao.zones(), dao.locations(),
@@ -171,6 +178,27 @@ class HierarchyRepository(private val dao: HierarchyDao) {
                 NodeType.LOCATION -> dao.markLocationSynced(node.code)
             }
         }
+    }
+
+    /** حذف عنصر — مسموح فقط لو مفيش عناصر تحته ولا زيارات مرتبطة بالموقع. */
+    suspend fun deleteNode(type: NodeType, code: String): DeleteNodeResult {
+        val childCount = when (type) {
+            NodeType.PROJECT -> dao.regionCountUnderProject(code)
+            NodeType.REGION -> dao.zoneCountUnderRegion(code)
+            NodeType.ZONE -> dao.locationCountUnderZone(code)
+            NodeType.LOCATION -> 0
+        }
+        if (childCount > 0) return DeleteNodeResult.BLOCKED_HAS_CHILDREN
+        if (type == NodeType.LOCATION && visitDao != null && visitDao.visitCountForLocation(code) > 0) {
+            return DeleteNodeResult.BLOCKED_HAS_VISITS
+        }
+        when (type) {
+            NodeType.PROJECT -> dao.deleteProject(code)
+            NodeType.REGION -> dao.deleteRegion(code)
+            NodeType.ZONE -> dao.deleteZone(code)
+            NodeType.LOCATION -> dao.deleteLocation(code)
+        }
+        return DeleteNodeResult.DELETED
     }
 
     private fun nowIso(): String = OffsetDateTime.now().toString()

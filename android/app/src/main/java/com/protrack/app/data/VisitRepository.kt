@@ -90,4 +90,14 @@ class VisitRepository(private val dao: VisitDao) {
 
     suspend fun markExported(id: Long, packageName: String) =
         dao.markExported(id, packageName, OffsetDateTime.now().toString())
+
+    suspend fun deleteChecklistItem(entity: VisitChecklistEntity) = dao.deleteChecklist(entity.id)
+
+    suspend fun allVisitsOnce(): List<VisitEntity> = dao.allVisitsOnce()
+
+    suspend fun equipmentCountOnce(visitRefId: Long): Int = dao.equipmentCountOnce(visitRefId)
+
+    suspend fun issueCountOnce(visitRefId: Long): Int = dao.issueCountOnce(visitRefId)
+
+    suspend fun photoCountOnce(visitRefId: Long): Int = dao.photoCountOnce(visitRefId)
 }

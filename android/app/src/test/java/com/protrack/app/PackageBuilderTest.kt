@@ -139,6 +139,7 @@ class PackageBuilderTest {
             assertTrue(reportXml.contains("rightToLeft=\"1\""))
             assertTrue(reportXml.contains("تقرير زيارة صيانة"))
             assertTrue(reportXml.contains("أحمد — فني أول"))
+            assertTrue(reportXml.contains("إعداد وتوقيع"))
             assertTrue(reportXml.contains("محطة الشمال / غرفة المضخات الرئيسية"))
             assertTrue(reportXml.contains("فحص كابل التغذية الرئيسي"))
             assertTrue(reportXml.contains("كابل تالف يحتاج استبدال"))

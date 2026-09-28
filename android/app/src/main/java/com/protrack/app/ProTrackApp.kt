@@ -30,7 +30,7 @@ class AppContainer(context: Context) {
 
     val settings = AppSettings(appContext)
 
-    val repository: HierarchyRepository = HierarchyRepository(database.hierarchyDao())
+    val repository: HierarchyRepository = HierarchyRepository(database.hierarchyDao(), database.visitDao())
     val visitRepository: VisitRepository = VisitRepository(database.visitDao())
 
     private val deviceInfo = DeviceInfoProvider(appContext)

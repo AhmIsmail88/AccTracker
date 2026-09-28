@@ -58,6 +58,8 @@ data class ExportPhoto(
     val lat: Double,
     val lon: Double,
     val accuracyM: Double,
+    val targetType: String = "EQUIPMENT",
+    val targetRef: String = "",
 )
 
 /** نصوص ورقة "Report" — تأتي من موارد التطبيق حسب اللغة. */
@@ -94,6 +96,8 @@ data class ReportLabels(
     val footer: String = "تم إنشاء هذا التقرير آليًا بواسطة ProTrack",
     val emptyEquipment: String = "لا توجد معدات مسجلة",
     val emptyPhotos: String = "لا توجد صور مرفقة",
+    val signatureBy: String = "إعداد وتوقيع الفني: %s",
+    val signatureLine: String = "التوقيع: ________________",
 )
 
 /**
@@ -175,7 +179,7 @@ class PackageBuilder(private val signer: PackageSigner) {
             val sha = sha256Hex(p.bytes)
             val sig = Base64.getEncoder().encodeToString(signer.sign(p.bytes))
             photosSheet.add(
-                listOf<Any?>(i + 1, p.fileName, "EQUIPMENT", "", p.takenAt, p.lat, p.lon, p.accuracyM, sha, sig),
+                listOf<Any?>(i + 1, p.fileName, p.targetType, p.targetRef, p.takenAt, p.lat, p.lon, p.accuracyM, sha, sig),
             )
         }
         sheets += XlsxWriter.plain("photos", photosSheet, hidden = true)
@@ -396,6 +400,16 @@ class PackageBuilder(private val signer: PackageSigner) {
             )
             mergeRow(rb, "A", "F")
         }
+
+        // توقيع الفني — أسفل التقرير للإدارة
+        nextRow(height = 6.0)
+        val techSign = technician.ifBlank { "—" }
+        val rs = nextRow(
+            six(cell(String.format(Locale.US, labels.signatureBy, techSign), XlsxStyle.BOLD_VALUE)),
+        )
+        mergeRow(rs, "A", "F")
+        val rsl = nextRow(six(cell(labels.signatureLine, XlsxStyle.VALUE)))
+        mergeRow(rsl, "A", "F")
 
         nextRow(height = 6.0)
         val rf = nextRow(

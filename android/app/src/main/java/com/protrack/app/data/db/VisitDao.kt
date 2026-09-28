@@ -59,4 +59,22 @@ interface VisitDao {
 
     @Query("UPDATE visit SET status = 'EXPORTED', packageName = :packageName, exportedAt = :exportedAt WHERE id = :id")
     suspend fun markExported(id: Long, packageName: String, exportedAt: String)
+
+    @Query("DELETE FROM visit_checklist_item WHERE id = :id")
+    suspend fun deleteChecklist(id: Long)
+
+    @Query("SELECT * FROM visit ORDER BY id DESC")
+    suspend fun allVisitsOnce(): List<VisitEntity>
+
+    @Query("SELECT COUNT(*) FROM visit_equipment WHERE visitRefId = :visitRefId")
+    suspend fun equipmentCountOnce(visitRefId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM visit_checklist_item WHERE visitRefId = :visitRefId AND status <> 'OK'")
+    suspend fun issueCountOnce(visitRefId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM visit_photo WHERE visitRefId = :visitRefId")
+    suspend fun photoCountOnce(visitRefId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM visit WHERE locationCode = :code")
+    suspend fun visitCountForLocation(code: String): Int
 }

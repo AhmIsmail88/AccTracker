@@ -116,4 +116,30 @@
     <string name="report_footer">This report was generated automatically by ProTrack</string>
     <string name="report_empty_equipment">No equipment recorded</string>
     <string name="report_empty_photos">No photos attached</string>
+
+    <!-- v0.4: visit history + photos + delete -->
+    <string name="home_visits">Visit history</string>
+    <string name="visits_title">Visit history</string>
+    <string name="visits_empty">No visits yet — start a new visit</string>
+    <string name="visit_status_draft">Draft</string>
+    <string name="visit_status_exported">Exported</string>
+    <string name="visit_resume">Resume visit</string>
+    <string name="visit_share_package">Share package</string>
+    <string name="visit_package_missing">Package file not found on this device</string>
+    <string name="visit_history_stats">Equipment: %1$d • Items needing attention: %2$d • Photos: %3$d</string>
+    <string name="photos_title">Visit photos</string>
+    <string name="photos_empty">No photos yet — capture from equipment or checklist items</string>
+    <string name="photos_share">Share photo</string>
+    <string name="photos_open">View photos</string>
+    <string name="checklist_photo_add">Item photo</string>
+    <string name="checklist_delete_item">Delete item</string>
+    <string name="checklist_delete_confirm">Delete "%1$s"?</string>
+    <string name="delete">Delete</string>
+    <string name="delete_node_confirm">Delete "%1$s" permanently?</string>
+    <string name="delete_blocked_children">Can\'t delete — it still has child items. Delete them first or deactivate it.</string>
+    <string name="delete_blocked_visits">Can\'t delete — visits reference this location. Use "Deactivate" instead.</string>
+    <string name="report_signature_by">Prepared &amp; signed by: %1$s</string>
+    <string name="report_signature_line">Signature: ________________</string>
+    <string name="visit_pick_location">Tap to choose a location</string>
+    <string name="visit_add_location">Add new location</string>
 </resources>

@@ -106,6 +106,18 @@ class VisitViewModel(
         viewModelScope.launch { visitRepository.addChecklistItem(id, name, status, note) }
     }
 
+    fun deleteChecklistItem(item: VisitChecklistEntity) {
+        viewModelScope.launch { visitRepository.deleteChecklistItem(item) }
+    }
+
+    /** استئناف زيارة سابقة (مسودة) — يكمل من خطوة المعدات. */
+    fun resume(visitId: Long) {
+        if (_visitId.value == visitId) return
+        _visitId.value = visitId
+        _step.value = Step.EQUIPMENT
+        _exportOutcome.value = null
+    }
+
     fun newPhotoFile(): File? {
         val id = _visitId.value ?: return null
         return photoManager.newPhotoFile(id)

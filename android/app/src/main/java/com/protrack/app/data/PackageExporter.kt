@@ -66,6 +66,8 @@ class PackageExporter(
                             lat = p.lat ?: 0.0,
                             lon = p.lon ?: 0.0,
                             accuracyM = p.accuracyM ?: 0.0,
+                            targetType = p.targetType,
+                            targetRef = p.targetRef,
                         )
                     }
                 } catch (e: Exception) {
@@ -203,6 +205,8 @@ class PackageExporter(
         footer = context.getString(R.string.report_footer),
         emptyEquipment = context.getString(R.string.report_empty_equipment),
         emptyPhotos = context.getString(R.string.report_empty_photos),
+        signatureBy = context.getString(R.string.report_signature_by),
+        signatureLine = context.getString(R.string.report_signature_line),
         )
     }
 

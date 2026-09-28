@@ -1,11 +1,14 @@
 package com.protrack.app.ui.visit
 
 import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -16,11 +19,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,6 +38,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,9 +68,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -73,9 +86,14 @@ import com.protrack.app.data.PhotoManager
 import com.protrack.app.data.VisitRepository
 import com.protrack.app.data.db.VisitChecklistEntity
 import com.protrack.app.data.db.VisitEquipmentEntity
+import com.protrack.app.data.db.VisitEntity
 import com.protrack.app.data.db.VisitPhotoEntity
 import com.protrack.app.domain.ChecklistCatalog
+import com.protrack.app.domain.NodeType
+import com.protrack.app.domain.TreeBuilder
+import com.protrack.app.domain.TreeNode
 import com.protrack.app.ui.capture.CameraCaptureScreen
+import kotlinx.coroutines.flow.first
 import java.io.File
 
 private const val KIND_MAIN_PUMP = "MAIN_PUMP"
@@ -90,6 +108,8 @@ fun VisitScreen(
     photoManager: PhotoManager,
     exporter: PackageExporter,
     onBack: () -> Unit,
+    resumeVisitId: Long? = null,
+    onAddLocation: () -> Unit = {},
 ) {
     val viewModel: VisitViewModel = viewModel(
         factory = VisitViewModel.Factory(hierarchyRepository, visitRepository, photoManager, exporter),
@@ -99,30 +119,37 @@ fun VisitScreen(
     val outcome by viewModel.exportOutcome.collectAsState()
     val photos by viewModel.photos.collectAsState()
     var notes by rememberSaveable { mutableStateOf("") }
+    var showPhotos by remember { mutableStateOf(false) }
+
+    LaunchedEffect(resumeVisitId) {
+        if (resumeVisitId != null) {
+            viewModel.resume(resumeVisitId)
+        }
+    }
 
     val context = LocalContext.current
-    var cameraTargetRef by remember { mutableStateOf<String?>(null) }
-    var pendingCameraRef by remember { mutableStateOf<String?>(null) }
+    var cameraTarget by remember { mutableStateOf<CameraTarget?>(null) }
+    var pendingCameraTarget by remember { mutableStateOf<CameraTarget?>(null) }
     var showPermissionMessage by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { result ->
         if (result[Manifest.permission.CAMERA] == true) {
-            cameraTargetRef = pendingCameraRef
+            cameraTarget = pendingCameraTarget
         } else {
             showPermissionMessage = true
         }
-        pendingCameraRef = null
+        pendingCameraTarget = null
     }
 
-    val startCapture: (String) -> Unit = { ref ->
+    val startCapture: (String, String) -> Unit = { type, ref ->
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED
         if (granted) {
-            cameraTargetRef = ref
+            cameraTarget = CameraTarget(type, ref)
         } else {
-            pendingCameraRef = ref
+            pendingCameraTarget = CameraTarget(type, ref)
             permissionLauncher.launch(
                 arrayOf(
                     Manifest.permission.CAMERA,
@@ -133,16 +160,21 @@ fun VisitScreen(
         }
     }
 
-    val activeCameraRef = cameraTargetRef
-    if (activeCameraRef != null) {
+    val activeCamera = cameraTarget
+    if (activeCamera != null) {
         CameraCaptureScreen(
             onCaptured = { file ->
-                viewModel.attachPhoto("EQUIPMENT", activeCameraRef, file)
-                cameraTargetRef = null
+                viewModel.attachPhoto(activeCamera.type, activeCamera.ref, file)
+                cameraTarget = null
             },
-            onCancel = { cameraTargetRef = null },
+            onCancel = { cameraTarget = null },
             fileFactory = { viewModel.newPhotoFile() ?: File(context.filesDir, "photo.jpg") },
         )
+        return
+    }
+
+    if (showPhotos) {
+        VisitPhotosScreen(photos = photos, onBack = { showPhotos = false })
         return
     }
 
@@ -166,6 +198,14 @@ fun VisitScreen(
                         )
                     }
                 },
+                actions = {
+                    IconButton(onClick = { showPhotos = true }) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = stringResource(R.string.photos_title),
+                        )
+                    }
+                },
             )
         },
     ) { padding ->
@@ -180,13 +220,17 @@ fun VisitScreen(
                     .fillMaxWidth(),
             ) {
                 when (step) {
-                    VisitViewModel.Step.LOCATION -> LocationStep(viewModel)
+                    VisitViewModel.Step.LOCATION -> LocationStep(viewModel, onAddLocation = onAddLocation)
                     VisitViewModel.Step.EQUIPMENT -> EquipmentStep(
                         viewModel = viewModel,
                         photos = photos,
                         onAddPhoto = startCapture,
                     )
-                    VisitViewModel.Step.CHECKLIST -> ChecklistStep(viewModel)
+                    VisitViewModel.Step.CHECKLIST -> ChecklistStep(
+                        viewModel = viewModel,
+                        photos = photos,
+                        onAddPhoto = startCapture,
+                    )
                     VisitViewModel.Step.REVIEW -> ReviewStep(
                         viewModel = viewModel,
                         notes = notes,
@@ -194,6 +238,7 @@ fun VisitScreen(
                         busy = busy,
                         outcome = outcome,
                         photosCount = photos.size,
+                        onShowPhotos = { showPhotos = true },
                     )
                 }
             }
@@ -270,50 +315,74 @@ private fun StepNavBar(
 }
 
 @Composable
-private fun LocationStep(viewModel: VisitViewModel) {
+private fun LocationStep(
+    viewModel: VisitViewModel,
+    onAddLocation: () -> Unit,
+) {
     val options by viewModel.locationOptions.collectAsState()
-    Column(modifier = Modifier.fillMaxSize()) {
+    var expanded by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf<LocationOption?>(null) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+    ) {
         Text(
             text = stringResource(R.string.visit_select_location),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp),
         )
+        Spacer(modifier = Modifier.height(12.dp))
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = selected?.let { it.name + " — " + it.path }
+                        ?: stringResource(R.string.visit_pick_location),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                )
+                Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(option.name)
+                                Text(
+                                    text = option.path,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            selected = option
+                            viewModel.chooseLocation(option.code)
+                        },
+                    )
+                }
+            }
+        }
         if (options.isEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.visit_no_locations),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
             )
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(options, key = { it.code }) { option ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.chooseLocation(option.code) }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(option.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                text = option.path,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = option.code,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onAddLocation,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(stringResource(R.string.visit_add_location))
         }
     }
 }
@@ -322,7 +391,7 @@ private fun LocationStep(viewModel: VisitViewModel) {
 private fun EquipmentStep(
     viewModel: VisitViewModel,
     photos: List<VisitPhotoEntity>,
-    onAddPhoto: (String) -> Unit,
+    onAddPhoto: (String, String) -> Unit,
 ) {
     val equipment by viewModel.equipment.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
@@ -396,7 +465,7 @@ private fun EquipmentStep(
             entity = entity,
             photos = photos.filter { it.targetRef == "${entity.kind}-${entity.tag}" },
             onAddPhoto = {
-                onAddPhoto("${entity.kind}-${entity.tag}")
+                onAddPhoto("EQUIPMENT", "${entity.kind}-${entity.tag}")
                 editTarget = null
             },
             onDismiss = { editTarget = null },
@@ -409,10 +478,15 @@ private fun EquipmentStep(
 }
 
 @Composable
-private fun ChecklistStep(viewModel: VisitViewModel) {
+private fun ChecklistStep(
+    viewModel: VisitViewModel,
+    photos: List<VisitPhotoEntity>,
+    onAddPhoto: (String, String) -> Unit,
+) {
     val checklist by viewModel.checklist.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var editTarget by remember { mutableStateOf<VisitChecklistEntity?>(null) }
+    var deleteTarget by remember { mutableStateOf<VisitChecklistEntity?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -437,7 +511,9 @@ private fun ChecklistStep(viewModel: VisitViewModel) {
                 ChecklistItemCard(
                     item = item,
                     name = checklistDisplayName(item),
+                    photoCount = photos.count { it.targetType == "CHECKLIST" && it.targetRef == item.itemCode },
                     onStatus = { status -> viewModel.setChecklistStatus(item, status) },
+                    onAddPhoto = { onAddPhoto("CHECKLIST", item.itemCode) },
                     onEdit = { editTarget = item },
                 )
             }
@@ -456,6 +532,7 @@ private fun ChecklistStep(viewModel: VisitViewModel) {
                 if (name.isNotBlank()) viewModel.addChecklistItem(name, status, note)
                 showAddDialog = false
             },
+            onDelete = null,
         )
     }
 
@@ -471,6 +548,33 @@ private fun ChecklistStep(viewModel: VisitViewModel) {
                 viewModel.saveChecklistItem(item, name, status, note)
                 editTarget = null
             },
+            onDelete = {
+                deleteTarget = item
+                editTarget = null
+            },
+        )
+    }
+
+    deleteTarget?.let { item ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(stringResource(R.string.checklist_delete_item)) },
+            text = { Text(stringResource(R.string.checklist_delete_confirm, checklistDisplayName(item))) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteChecklistItem(item)
+                        deleteTarget = null
+                    },
+                ) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
         )
     }
 }
@@ -482,7 +586,9 @@ private fun checklistDisplayName(item: VisitChecklistEntity): String =
 private fun ChecklistItemCard(
     item: VisitChecklistEntity,
     name: String,
+    photoCount: Int,
     onStatus: (String) -> Unit,
+    onAddPhoto: () -> Unit,
     onEdit: () -> Unit,
 ) {
     Card(
@@ -495,12 +601,20 @@ private fun ChecklistItemCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(name, style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = if (item.isCustom) stringResource(R.string.checklist_custom_badge) else item.itemCode,
+                        text = (if (item.isCustom) stringResource(R.string.checklist_custom_badge) else item.itemCode) +
+                            if (photoCount > 0) " • 📷 $photoCount" else "",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
                 ChecklistStatusDropdown(status = item.status, onSelect = onStatus)
+                IconButton(onClick = onAddPhoto) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = stringResource(R.string.checklist_photo_add),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 IconButton(onClick = onEdit) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -569,6 +683,7 @@ private fun ChecklistItemDialog(
     requireName: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String) -> Unit,
+    onDelete: (() -> Unit)?,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var status by remember { mutableStateOf(initialStatus) }
@@ -604,11 +719,21 @@ private fun ChecklistItemDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onConfirm(name, status, note) },
-                enabled = !requireName || name.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.save))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onDelete != null) {
+                    TextButton(onClick = onDelete) {
+                        Text(
+                            text = stringResource(R.string.checklist_delete_item),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                TextButton(
+                    onClick = { onConfirm(name, status, note) },
+                    enabled = !requireName || name.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.save))
+                }
             }
         },
         dismissButton = {
@@ -627,6 +752,7 @@ private fun ReviewStep(
     busy: Boolean,
     outcome: ExportOutcome?,
     photosCount: Int,
+    onShowPhotos: () -> Unit,
 ) {
     val equipment by viewModel.equipment.collectAsState()
     val checklist by viewModel.checklist.collectAsState()
@@ -667,6 +793,13 @@ private fun ReviewStep(
             text = stringResource(R.string.visit_photos_count, photosCount),
             style = MaterialTheme.typography.bodyMedium,
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = onShowPhotos,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.photos_open))
+        }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = notes,
@@ -918,4 +1051,345 @@ private fun sharePackage(context: Context, file: File) {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     context.startActivity(Intent.createChooser(intent, null))
+}
+
+private data class CameraTarget(val type: String, val ref: String)
+
+// ===================== صور الزيارة =====================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VisitPhotosScreen(
+    photos: List<VisitPhotoEntity>,
+    onBack: () -> Unit,
+) {
+    val context = LocalContext.current
+    var preview by remember { mutableStateOf<VisitPhotoEntity?>(null) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.photos_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.nav_back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        if (photos.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(R.string.photos_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(photos, key = { it.id }) { photo ->
+                    PhotoGridItem(photo = photo, onClick = { preview = photo })
+                }
+            }
+        }
+    }
+
+    preview?.let { photo ->
+        AlertDialog(
+            onDismissRequest = { preview = null },
+            title = { Text(File(photo.filePath).name) },
+            text = {
+                val bitmap = remember(photo.id) { loadThumbnail(photo.filePath, 1024) }
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                } else {
+                    Text(stringResource(R.string.photos_empty))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val file = File(photo.filePath)
+                        if (file.exists()) {
+                            sharePhoto(context, file)
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.photos_share))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { preview = null }) {
+                    Text(stringResource(R.string.close))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PhotoGridItem(photo: VisitPhotoEntity, onClick: () -> Unit) {
+    Card(modifier = Modifier.clickable(onClick = onClick)) {
+        Column {
+            val bitmap = remember(photo.id) { loadThumbnail(photo.filePath, 512) }
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp),
+                )
+            }
+            Text(
+                text = photo.takenAt.replace('T', ' ').take(16),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(6.dp),
+            )
+        }
+    }
+}
+
+private fun loadThumbnail(path: String, targetPx: Int): Bitmap? = try {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(path, bounds)
+    var sample = 1
+    while (bounds.outWidth / sample > targetPx * 2 || bounds.outHeight / sample > targetPx * 2) {
+        sample *= 2
+    }
+    BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+} catch (e: Exception) {
+    null
+}
+
+private fun sharePhoto(context: Context, file: File) {
+    val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/jpeg"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
+}
+
+// ===================== سجل الزيارات =====================
+
+private data class VisitHistoryItem(
+    val visit: VisitEntity,
+    val locationName: String,
+    val equipmentCount: Int,
+    val issueCount: Int,
+    val photoCount: Int,
+    val packageFile: File?,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VisitsHistoryScreen(
+    visitRepository: VisitRepository,
+    hierarchyRepository: HierarchyRepository,
+    onOpenVisit: (Long) -> Unit,
+    onBack: () -> Unit,
+) {
+    val context = LocalContext.current
+    var loading by remember { mutableStateOf(true) }
+    var visitItems by remember { mutableStateOf<List<VisitHistoryItem>>(emptyList()) }
+    var showPackageMissing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val data = hierarchyRepository.data.first()
+        val tree = TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
+        val nameByCode = mutableMapOf<String, String>()
+        fun walk(nodes: List<TreeNode>) {
+            for (node in nodes) {
+                if (node.type == NodeType.LOCATION) {
+                    nameByCode[node.code] = node.name
+                }
+                walk(node.children)
+            }
+        }
+        walk(tree)
+
+        val visits = visitRepository.allVisitsOnce()
+        visitItems = visits.map { visit ->
+            VisitHistoryItem(
+                visit = visit,
+                locationName = nameByCode[visit.locationCode] ?: visit.locationCode,
+                equipmentCount = visitRepository.equipmentCountOnce(visit.id),
+                issueCount = visitRepository.issueCountOnce(visit.id),
+                photoCount = visitRepository.photoCountOnce(visit.id),
+                packageFile = visit.packageName?.let { name ->
+                    File(File(context.getExternalFilesDir(null), "packages"), name).takeIf { it.exists() }
+                },
+            )
+        }
+        loading = false
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.visits_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.nav_back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        when {
+            loading -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator()
+            }
+            visitItems.isEmpty() -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(R.string.visits_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            else -> LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                items(visitItems, key = { it.visit.id }) { item ->
+                    VisitHistoryCard(
+                        item = item,
+                        onResume = { onOpenVisit(item.visit.id) },
+                        onShare = { file -> sharePackage(context, file) },
+                        onMissing = { showPackageMissing = true },
+                    )
+                }
+            }
+        }
+    }
+
+    if (showPackageMissing) {
+        AlertDialog(
+            onDismissRequest = { showPackageMissing = false },
+            title = { Text(stringResource(R.string.visit_share_package)) },
+            text = { Text(stringResource(R.string.visit_package_missing)) },
+            confirmButton = {
+                TextButton(onClick = { showPackageMissing = false }) {
+                    Text(stringResource(R.string.done))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun VisitHistoryCard(
+    item: VisitHistoryItem,
+    onResume: () -> Unit,
+    onShare: (File) -> Unit,
+    onMissing: () -> Unit,
+) {
+    val visit = item.visit
+    val exported = visit.status == "EXPORTED"
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = item.locationName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = stringResource(
+                        if (exported) R.string.visit_status_exported else R.string.visit_status_draft,
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (exported) Color(0xFF2E7D32) else Color(0xFFB26A00),
+                )
+            }
+            Text(
+                text = visit.visitId + " • " + visit.startedAt.replace('T', ' ').take(16),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+            Text(
+                text = stringResource(
+                    R.string.visit_history_stats,
+                    item.equipmentCount,
+                    item.issueCount,
+                    item.photoCount,
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!exported) {
+                    Button(onClick = onResume, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.visit_resume))
+                    }
+                }
+                if (exported) {
+                    OutlinedButton(
+                        onClick = { item.packageFile?.let(onShare) ?: onMissing() },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.visit_share_package))
+                    }
+                }
+            }
+        }
+    }
 }

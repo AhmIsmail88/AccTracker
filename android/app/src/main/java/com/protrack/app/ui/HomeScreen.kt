@@ -28,6 +28,7 @@ fun HomeScreen(
     technicianName: String,
     onManageLocations: () -> Unit,
     onNewVisit: () -> Unit,
+    onVisitHistory: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     Column(
@@ -85,6 +86,13 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(text = stringResource(R.string.home_new_visit))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onVisitHistory,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = stringResource(R.string.home_visits))
             }
         }
     }

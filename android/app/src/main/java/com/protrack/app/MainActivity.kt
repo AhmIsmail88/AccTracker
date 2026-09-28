@@ -6,15 +6,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.protrack.app.ui.HomeScreen
 import com.protrack.app.ui.locations.LocationsScreen
 import com.protrack.app.ui.onboarding.OnboardingScreen
 import com.protrack.app.ui.settings.SettingsScreen
 import com.protrack.app.ui.theme.ProTrackTheme
 import com.protrack.app.ui.visit.VisitScreen
+import com.protrack.app.ui.visit.VisitsHistoryScreen
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -65,6 +68,7 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
                 technicianName = container.settings.technicianName,
                 onManageLocations = { navController.navigate("locations") },
                 onNewVisit = { navController.navigate("visit") },
+                onVisitHistory = { navController.navigate("visits") },
                 onOpenSettings = { navController.navigate("settings") },
             )
         }
@@ -87,6 +91,29 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
                 photoManager = container.photoManager,
                 exporter = container.exporter,
                 onBack = { navController.popBackStack() },
+                onAddLocation = { navController.navigate("locations") },
+            )
+        }
+        composable("visits") {
+            VisitsHistoryScreen(
+                visitRepository = container.visitRepository,
+                hierarchyRepository = container.repository,
+                onOpenVisit = { visitId -> navController.navigate("visitResume/$visitId") },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(
+            "visitResume/{visitId}",
+            arguments = listOf(navArgument("visitId") { type = NavType.LongType }),
+        ) { entry ->
+            VisitScreen(
+                hierarchyRepository = container.repository,
+                visitRepository = container.visitRepository,
+                photoManager = container.photoManager,
+                exporter = container.exporter,
+                onBack = { navController.popBackStack() },
+                resumeVisitId = entry.arguments?.getLong("visitId"),
+                onAddLocation = { navController.navigate("locations") },
             )
         }
     }
