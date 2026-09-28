@@ -6,6 +6,7 @@ import com.protrack.app.domain.export.ExportChecklist
 import com.protrack.app.domain.export.ExportEquipment
 import com.protrack.app.domain.export.ExportLocation
 import com.protrack.app.domain.export.ExportMeta
+import com.protrack.app.domain.export.ExportNames
 import com.protrack.app.domain.export.ExportPhoto
 import com.protrack.app.domain.export.ExportVisit
 import com.protrack.app.domain.export.PackageBuilder
@@ -32,6 +33,7 @@ class PackageExporter(
     private val visitRepository: VisitRepository,
     private val hierarchyRepository: HierarchyRepository,
     private val deviceInfo: DeviceInfoProvider,
+    private val settings: AppSettings,
 ) {
 
     suspend fun export(visitId: Long, notes: String): ExportOutcome = withContext(Dispatchers.IO) {
@@ -113,7 +115,7 @@ class PackageExporter(
 
             val dir = File(context.getExternalFilesDir(null), "packages").apply { mkdirs() }
             val stamp = OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
-            val fileName = "Visit_${visit.locationCode}_$stamp.zip"
+            val fileName = ExportNames.visitFileName(visit.locationCode, stamp, settings.technicianName)
             val file = File(dir, fileName)
             file.writeBytes(bytes)
 

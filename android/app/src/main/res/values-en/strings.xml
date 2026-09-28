@@ -69,4 +69,13 @@
     <string name="close">Close</string>
     <string name="camera_permission_denied">Camera permission is required from system settings</string>
     <string name="camera_unavailable">Camera is not available on this device</string>
+
+    <string name="onboarding_title">Welcome 👋</string>
+    <string name="onboarding_subtitle">Two quick steps before you start</string>
+    <string name="technician_name_label">Technician name</string>
+    <string name="language_label">Language</string>
+    <string name="lang_arabic">العربية</string>
+    <string name="lang_english">English</string>
+    <string name="continue_label">Continue</string>
+    <string name="home_greeting">Welcome, %1$s</string>
 </resources>

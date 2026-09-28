@@ -20,6 +20,7 @@ import com.protrack.app.R
 
 @Composable
 fun HomeScreen(
+    technicianName: String,
     onManageLocations: () -> Unit,
     onNewVisit: () -> Unit,
 ) {
@@ -41,6 +42,14 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        if (technicianName.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.home_greeting, technicianName),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         Spacer(modifier = Modifier.height(48.dp))
         Button(
             onClick = onManageLocations,

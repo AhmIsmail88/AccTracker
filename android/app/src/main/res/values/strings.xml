@@ -69,4 +69,13 @@
     <string name="close">إغلاق</string>
     <string name="camera_permission_denied">لازم تسمح بإذن الكاميرا من إعدادات النظام</string>
     <string name="camera_unavailable">الكاميرا غير متاحة على الجهاز</string>
+
+    <string name="onboarding_title">أهلاً بيك 👋</string>
+    <string name="onboarding_subtitle">خطوتين بسيطين قبل ما تبدأ المتابعة</string>
+    <string name="technician_name_label">اسم الفني</string>
+    <string name="language_label">اللغة</string>
+    <string name="lang_arabic">العربية</string>
+    <string name="lang_english">English</string>
+    <string name="continue_label">متابعة</string>
+    <string name="home_greeting">أهلاً، %1$s</string>
 </resources>

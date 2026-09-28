@@ -3,6 +3,7 @@ package com.protrack.app
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import com.protrack.app.data.AppSettings
 import com.protrack.app.data.DeviceInfoProvider
 import com.protrack.app.data.HierarchyRepository
 import com.protrack.app.data.LocationProvider
@@ -27,6 +28,8 @@ class AppContainer(context: Context) {
         .fallbackToDestructiveMigration()
         .build()
 
+    val settings = AppSettings(appContext)
+
     val repository: HierarchyRepository = HierarchyRepository(database.hierarchyDao())
     val visitRepository: VisitRepository = VisitRepository(database.visitDao())
 
@@ -34,5 +37,6 @@ class AppContainer(context: Context) {
     private val locationProvider = LocationProvider(appContext)
 
     val photoManager = PhotoManager(appContext, visitRepository, deviceInfo, locationProvider)
-    val exporter: PackageExporter = PackageExporter(appContext, visitRepository, repository, deviceInfo)
+    val exporter: PackageExporter =
+        PackageExporter(appContext, visitRepository, repository, deviceInfo, settings)
 }
