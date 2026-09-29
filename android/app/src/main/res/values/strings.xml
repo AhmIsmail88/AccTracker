@@ -151,4 +151,13 @@
     <string name="visit_level_empty">مفيش عناصر هنا بعد — أضفها من إدارة المواقع</string>
     <string name="visit_back_level">‹ رجوع خطوة لفوق</string>
     <string name="app_signature">By Ahmed Ismail</string>
+    <string name="settings_about">حول التطبيق</string>
+    <string name="about_title">حول التطبيق</string>
+    <string name="about_tagline">نظام متابعة المواقع والصيانة الميدانية</string>
+    <string name="about_company">Advanced Construction Co.</string>
+    <string name="about_version">الإصدار %1$s</string>
+    <string name="about_desc">تطبيق ميداني يعمل بدون إنترنت: زيارة المواقع، تسجيل المعدات والبنود بالصور الموثقة، وتصدير تقارير جاهزة للإدارة بالتوقيع الرقمي.</string>
+    <string name="about_contact">للتواصل</string>
+    <string name="about_linkedin">تواصل عبر LinkedIn</string>
+    <string name="about_footer">By Ahmed Ismail</string>
 </resources>

@@ -14,6 +14,7 @@ import androidx.navigation.navArgument
 import com.protrack.app.ui.HomeScreen
 import com.protrack.app.ui.locations.LocationsScreen
 import com.protrack.app.ui.onboarding.OnboardingScreen
+import com.protrack.app.ui.settings.AboutScreen
 import com.protrack.app.ui.settings.SettingsScreen
 import com.protrack.app.ui.theme.ProTrackTheme
 import com.protrack.app.ui.visit.VisitScreen
@@ -76,7 +77,11 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
             SettingsScreen(
                 settings = container.settings,
                 onBack = { navController.popBackStack() },
+                onOpenAbout = { navController.navigate("about") },
             )
+        }
+        composable("about") {
+            AboutScreen(onBack = { navController.popBackStack() })
         }
         composable(
             "locations?addUnder={addUnder}",

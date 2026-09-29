@@ -151,4 +151,13 @@
     <string name="visit_level_empty">Nothing here yet — add from Locations</string>
     <string name="visit_back_level">‹ Back one level</string>
     <string name="app_signature">By Ahmed Ismail</string>
+    <string name="settings_about">About</string>
+    <string name="about_title">About the app</string>
+    <string name="about_tagline">Field sites &amp; maintenance tracking system</string>
+    <string name="about_company">Advanced Construction Co.</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_desc">An offline-first field app: visit locations, record equipment and checklist items with stamped photos, and export management-ready reports with digital signatures.</string>
+    <string name="about_contact">Contact</string>
+    <string name="about_linkedin">Connect on LinkedIn</string>
+    <string name="about_footer">By Ahmed Ismail</string>
 </resources>
