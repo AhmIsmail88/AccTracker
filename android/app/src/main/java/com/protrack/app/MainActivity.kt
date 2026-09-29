@@ -78,10 +78,14 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
                 onBack = { navController.popBackStack() },
             )
         }
-        composable("locations") {
+        composable(
+            "locations?addUnder={addUnder}",
+            arguments = listOf(navArgument("addUnder") { type = NavType.StringType; defaultValue = "" }),
+        ) { entry ->
             LocationsScreen(
                 repository = container.repository,
                 onBack = { navController.popBackStack() },
+                autoAddUnder = entry.arguments?.getString("addUnder")?.takeIf { it.isNotBlank() },
             )
         }
         composable("visit") {
@@ -91,7 +95,11 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
                 photoManager = container.photoManager,
                 exporter = container.exporter,
                 onBack = { navController.popBackStack() },
-                onAddLocation = { navController.navigate("locations") },
+                onAddLocation = { under ->
+                    navController.navigate(
+                        if (under.isNullOrBlank()) "locations" else "locations?addUnder=$under",
+                    )
+                },
             )
         }
         composable("visits") {
@@ -113,7 +121,11 @@ fun AppNav(container: AppContainer, startOnboarding: Boolean) {
                 exporter = container.exporter,
                 onBack = { navController.popBackStack() },
                 resumeVisitId = entry.arguments?.getLong("visitId"),
-                onAddLocation = { navController.navigate("locations") },
+                onAddLocation = { under ->
+                    navController.navigate(
+                        if (under.isNullOrBlank()) "locations" else "locations?addUnder=$under",
+                    )
+                },
             )
         }
     }

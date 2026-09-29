@@ -8,6 +8,7 @@ import com.protrack.app.data.HierarchyRepository
 import com.protrack.app.domain.NodeType
 import com.protrack.app.domain.TreeBuilder
 import com.protrack.app.domain.TreeNode
+import kotlinx.coroutines.flow.first
 import com.protrack.app.domain.TreeRow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,6 +52,20 @@ class LocationsViewModel(private val repository: HierarchyRepository) : ViewMode
 
     fun setStatus(type: NodeType, code: String, status: String) {
         viewModelScope.launch { repository.setStatus(type, code, status) }
+    }
+
+    /** إيجاد عقدة في الشجرة الكاملة (للانتقال التلقائي لإضافة موقع تحت عنصر). */
+    suspend fun findNode(code: String): TreeNode? {
+        val data = repository.data.first()
+        val tree = TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
+        fun rec(nodes: List<TreeNode>): TreeNode? {
+            for (node in nodes) {
+                if (node.code == code) return node
+                rec(node.children)?.let { return it }
+            }
+            return null
+        }
+        return rec(tree)
     }
 
     fun deleteNode(node: TreeNode) {

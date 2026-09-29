@@ -5,50 +5,52 @@ import com.protrack.app.data.db.ProjectEntity
 import com.protrack.app.data.db.RegionEntity
 import com.protrack.app.data.db.ZoneEntity
 
+private data class FlatNode(
+    val type: NodeType,
+    val code: String,
+    val name: String,
+    val status: String,
+    val parent: String?,
+)
+
 object TreeBuilder {
 
+    /**
+     * يبني الشجرة بمرونة: أي عقدة تتعلّق بأي أب أعلى حسب الكود المخزّن —
+     * مش لازم كل المستويات موجودة (يتخطى الناقص). الجذور = المشاريع.
+     */
     fun build(
         projects: List<ProjectEntity>,
         regions: List<RegionEntity>,
         zones: List<ZoneEntity>,
         locations: List<LocationEntity>,
     ): List<TreeNode> {
-        val regionsByProject = regions.groupBy { it.projectCode }
-        val zonesByRegion = zones.groupBy { it.regionCode }
-        val locationsByZone = locations.groupBy { it.zoneCode }
+        val flat = mutableListOf<FlatNode>()
+        projects.forEach { flat += FlatNode(NodeType.PROJECT, it.code, it.name, it.status, null) }
+        regions.forEach { flat += FlatNode(NodeType.REGION, it.code, it.name, it.status, it.projectCode.ifBlank { null }) }
+        zones.forEach { flat += FlatNode(NodeType.ZONE, it.code, it.name, it.status, it.regionCode.ifBlank { null }) }
+        locations.forEach { flat += FlatNode(NodeType.LOCATION, it.code, it.name, it.status, it.zoneCode.ifBlank { null }) }
 
-        return projects.sortedBy { it.code }.map { p ->
-            TreeNode(
-                type = NodeType.PROJECT,
-                code = p.code,
-                name = p.name,
-                status = p.status,
-                children = regionsByProject[p.code].orEmpty().sortedBy { it.code }.map { r ->
-                    TreeNode(
-                        type = NodeType.REGION,
-                        code = r.code,
-                        name = r.name,
-                        status = r.status,
-                        children = zonesByRegion[r.code].orEmpty().sortedBy { it.code }.map { z ->
-                            TreeNode(
-                                type = NodeType.ZONE,
-                                code = z.code,
-                                name = z.name,
-                                status = z.status,
-                                children = locationsByZone[z.code].orEmpty().sortedBy { it.code }.map { l ->
-                                    TreeNode(
-                                        type = NodeType.LOCATION,
-                                        code = l.code,
-                                        name = l.name,
-                                        status = l.status,
-                                    )
-                                },
-                            )
-                        },
-                    )
-                },
+        val childrenByParent = flat.filter { !it.parent.isNullOrBlank() }.groupBy { it.parent }
+
+        fun nodeOf(f: FlatNode, seen: Set<String>): TreeNode {
+            val next = seen + f.code
+            val kids = childrenByParent[f.code].orEmpty()
+                .filter { it.code !in next }
+                .sortedBy { it.code }
+            return TreeNode(
+                type = f.type,
+                code = f.code,
+                name = f.name,
+                status = f.status,
+                children = kids.map { nodeOf(it, next) },
             )
         }
+
+        return flat
+            .filter { it.type == NodeType.PROJECT }
+            .sortedBy { it.code }
+            .map { nodeOf(it, emptySet()) }
     }
 
     fun flatten(tree: List<TreeNode>, expanded: Set<String>): List<TreeRow> {

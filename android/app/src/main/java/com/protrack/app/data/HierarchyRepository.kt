@@ -114,33 +114,35 @@ class HierarchyRepository(
         }
     }
 
-    /** سلسلة الموقع الكاملة (الموقع ← الزون ← المنطقة ← المشروع). */
+    /** سلسلة الموقع الكاملة من الموقع للأعلى — بتدعم تخطي المستويات (أي أب أعلى). */
     suspend fun locationChain(locationCode: String): List<HierarchyNode> {
         val out = mutableListOf<HierarchyNode>()
-        val location = dao.locationByCode(locationCode) ?: return out
-        out += HierarchyNode(
-            NodeType.LOCATION, location.code, location.zoneCode.ifBlank { null },
-            location.name, location.status, location.updatedAt, location.syncState,
-        )
-        val zoneCode = location.zoneCode.takeIf { it.isNotBlank() } ?: return out
-        val zone = dao.zoneByCode(zoneCode) ?: return out
-        out += HierarchyNode(
-            NodeType.ZONE, zone.code, zone.regionCode.ifBlank { null },
-            zone.name, zone.status, zone.updatedAt, zone.syncState,
-        )
-        val regionCode = zone.regionCode.takeIf { it.isNotBlank() } ?: return out
-        val region = dao.regionByCode(regionCode) ?: return out
-        out += HierarchyNode(
-            NodeType.REGION, region.code, region.projectCode.ifBlank { null },
-            region.name, region.status, region.updatedAt, region.syncState,
-        )
-        val projectCode = region.projectCode.takeIf { it.isNotBlank() } ?: return out
-        val project = dao.projectByCode(projectCode) ?: return out
-        out += HierarchyNode(
-            NodeType.PROJECT, project.code, null,
-            project.name, project.status, project.updatedAt, project.syncState,
-        )
+        var code: String? = locationCode
+        var guard = 0
+        while (!code.isNullOrBlank() && guard < 10) {
+            val node = nodeByCode(code) ?: break
+            out += node
+            code = node.parentCode
+            guard += 1
+        }
         return out
+    }
+
+    /** العقدة بالكود — النوع يتحدد من بادئة الكود (PRJ/RGN/ZN/LOC). */
+    suspend fun nodeByCode(code: String): HierarchyNode? = when {
+        code.startsWith("PRJ-") -> dao.projectByCode(code)?.let {
+            HierarchyNode(NodeType.PROJECT, it.code, null, it.name, it.status, it.updatedAt, it.syncState)
+        }
+        code.startsWith("RGN-") -> dao.regionByCode(code)?.let {
+            HierarchyNode(NodeType.REGION, it.code, it.projectCode.ifBlank { null }, it.name, it.status, it.updatedAt, it.syncState)
+        }
+        code.startsWith("ZN-") -> dao.zoneByCode(code)?.let {
+            HierarchyNode(NodeType.ZONE, it.code, it.regionCode.ifBlank { null }, it.name, it.status, it.updatedAt, it.syncState)
+        }
+        code.startsWith("LOC-") -> dao.locationByCode(code)?.let {
+            HierarchyNode(NodeType.LOCATION, it.code, it.zoneCode.ifBlank { null }, it.name, it.status, it.updatedAt, it.syncState)
+        }
+        else -> null
     }
 
     /** كل العناصر المعلّقة (أُضيفت/عُدّلت محليًا ولم تُصدَّر بعد). */
@@ -183,8 +185,9 @@ class HierarchyRepository(
     /** حذف عنصر — مسموح فقط لو مفيش عناصر تحته ولا زيارات مرتبطة بالموقع. */
     suspend fun deleteNode(type: NodeType, code: String): DeleteNodeResult {
         val childCount = when (type) {
-            NodeType.PROJECT -> dao.regionCountUnderProject(code)
-            NodeType.REGION -> dao.zoneCountUnderRegion(code)
+            NodeType.PROJECT -> dao.regionCountUnderProject(code) +
+                dao.zoneCountUnderRegion(code) + dao.locationCountUnderZone(code)
+            NodeType.REGION -> dao.zoneCountUnderRegion(code) + dao.locationCountUnderZone(code)
             NodeType.ZONE -> dao.locationCountUnderZone(code)
             NodeType.LOCATION -> 0
         }

@@ -108,11 +108,14 @@ def _check_locations(rows, entry):
             entry("FLAG", "possible duplicate name under same parent: '%s' (%s) -> %s" % (name, parent, ", ".join(codes)))
             flagged = True
 
+    type_rank = {"PROJECT": 0, "REGION": 1, "ZONE": 2, "LOCATION": 3}
     for code, (name, parent, typ) in by_code.items():
-        expected_parent_type = TYPE_ORDER[typ]
-        if expected_parent_type and parent and parent in by_code and by_code[parent][2] != expected_parent_type:
-            entry("FLAG", "parent type mismatch: %s(%s) parent %s(%s)" % (code, typ, parent, by_code[parent][2]))
-            flagged = True
+        if parent and parent in by_code:
+            parent_type = by_code[parent][2]
+            # الأب لازم يكون أعلى في السلسلة — يسمح بتخطي مستويات ناقصة (زر/منطقة)
+            if type_rank.get(parent_type, 99) >= type_rank.get(typ, -1):
+                entry("FLAG", "parent type mismatch: %s(%s) parent %s(%s)" % (code, typ, parent, parent_type))
+                flagged = True
     return flagged
 
 

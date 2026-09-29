@@ -19,6 +19,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -79,11 +80,29 @@ class VisitViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun chooseLocation(code: String) {
-        if (_visitId.value != null) return
+        if (_visitId.value != null) {
+            // الزيارة اتعملت بالفعل — «متابعة» ترجع للخطوة التالية
+            _step.value = Step.EQUIPMENT
+            return
+        }
         viewModelScope.launch {
             _visitId.value = visitRepository.createVisit(code)
             _step.value = Step.EQUIPMENT
         }
+    }
+
+    /** إيجاد عقدة في الشجرة الكاملة (للانتقال التلقائي لإضافة موقع تحت عنصر). */
+    suspend fun findNode(code: String): TreeNode? {
+        val data = hierarchyRepository.data.first()
+        val tree = TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
+        fun rec(nodes: List<TreeNode>): TreeNode? {
+            for (node in nodes) {
+                if (node.code == code) return node
+                rec(node.children)?.let { return it }
+            }
+            return null
+        }
+        return rec(tree)
     }
 
     fun addEquipment(kind: String, model: String, quantity: Int) {

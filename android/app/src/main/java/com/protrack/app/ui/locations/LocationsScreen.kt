@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,7 @@ import com.protrack.app.domain.TreeRow
 fun LocationsScreen(
     repository: HierarchyRepository,
     onBack: () -> Unit,
+    autoAddUnder: String? = null,
 ) {
     val viewModel: LocationsViewModel = viewModel(factory = LocationsViewModel.Factory(repository))
     val state by viewModel.uiState.collectAsState()
@@ -60,6 +62,24 @@ fun LocationsScreen(
     var actionNode by remember { mutableStateOf<TreeNode?>(null) }
     var editTarget by remember { mutableStateOf<EditTarget?>(null) }
     var deleteAskNode by remember { mutableStateOf<TreeNode?>(null) }
+    var autoAddHandled by remember { mutableStateOf(false) }
+    var autoAddParent by remember { mutableStateOf<TreeNode?>(null) }
+
+    // الوصول التلقائي من «زيارة جديدة»: افتح إضافة العنصر التابع مباشرة (مع اختيار النوع عند تعدد الخيارات)
+    LaunchedEffect(autoAddUnder) {
+        if (!autoAddUnder.isNullOrBlank() && !autoAddHandled) {
+            autoAddHandled = true
+            val node = viewModel.findNode(autoAddUnder)
+            if (node != null) {
+                val types = addableChildTypes(node.type)
+                when (types.size) {
+                    0 -> Unit
+                    1 -> editTarget = EditTarget.AddChild(parent = node, childType = types[0])
+                    else -> autoAddParent = node
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -147,11 +167,8 @@ fun LocationsScreen(
         ActionsDialog(
             node = node,
             onDismiss = { actionNode = null },
-            onAddChild = {
-                val childType = node.type.childType
-                if (childType != null) {
-                    editTarget = EditTarget.AddChild(parent = node, childType = childType)
-                }
+            onAddChild = { childType ->
+                editTarget = EditTarget.AddChild(parent = node, childType = childType)
                 actionNode = null
             },
             onRename = {
@@ -231,6 +248,34 @@ fun LocationsScreen(
             },
         )
     }
+
+    autoAddParent?.let { parent ->
+        AlertDialog(
+            onDismissRequest = { autoAddParent = null },
+            title = { Text(parent.name) },
+            text = {
+                Column {
+                    addableChildTypes(parent.type).forEach { type ->
+                        TextButton(
+                            onClick = {
+                                editTarget = EditTarget.AddChild(parent = parent, childType = type)
+                                autoAddParent = null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(titleResFor(type)))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { autoAddParent = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
 }
 
 private sealed interface EditTarget {
@@ -243,6 +288,14 @@ private fun titleResFor(type: NodeType): Int = when (type) {
     NodeType.REGION -> R.string.add_region
     NodeType.ZONE -> R.string.add_zone
     NodeType.LOCATION -> R.string.add_location
+}
+
+/** أنواع العناصر المسموح إضافتها تحت نوع معيّن (مع تخطي مستويات ناقصة). */
+private fun addableChildTypes(type: NodeType): List<NodeType> = when (type) {
+    NodeType.PROJECT -> listOf(NodeType.REGION, NodeType.ZONE, NodeType.LOCATION)
+    NodeType.REGION -> listOf(NodeType.ZONE, NodeType.LOCATION)
+    NodeType.ZONE -> listOf(NodeType.LOCATION)
+    NodeType.LOCATION -> emptyList()
 }
 
 @Composable
@@ -306,20 +359,19 @@ private fun TreeRowItem(
 private fun ActionsDialog(
     node: TreeNode,
     onDismiss: () -> Unit,
-    onAddChild: () -> Unit,
+    onAddChild: (NodeType) -> Unit,
     onRename: () -> Unit,
     onToggleStatus: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val childType = node.type.childType
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(node.name) },
         text = {
             Column {
-                if (childType != null) {
-                    TextButton(onClick = onAddChild, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(titleResFor(childType)))
+                addableChildTypes(node.type).forEach { type ->
+                    TextButton(onClick = { onAddChild(type) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(titleResFor(type)))
                     }
                 }
                 TextButton(onClick = onRename, modifier = Modifier.fillMaxWidth()) {

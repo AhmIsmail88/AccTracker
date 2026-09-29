@@ -109,7 +109,7 @@ fun VisitScreen(
     exporter: PackageExporter,
     onBack: () -> Unit,
     resumeVisitId: Long? = null,
-    onAddLocation: () -> Unit = {},
+    onAddLocation: (String?) -> Unit = {},
 ) {
     val viewModel: VisitViewModel = viewModel(
         factory = VisitViewModel.Factory(hierarchyRepository, visitRepository, photoManager, exporter),
@@ -120,6 +120,7 @@ fun VisitScreen(
     val photos by viewModel.photos.collectAsState()
     var notes by rememberSaveable { mutableStateOf("") }
     var showPhotos by remember { mutableStateOf(false) }
+    var pendingLocationCode by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(resumeVisitId) {
         if (resumeVisitId != null) {
@@ -220,7 +221,11 @@ fun VisitScreen(
                     .fillMaxWidth(),
             ) {
                 when (step) {
-                    VisitViewModel.Step.LOCATION -> LocationStep(viewModel, onAddLocation = onAddLocation)
+                    VisitViewModel.Step.LOCATION -> LocationStep(
+                        viewModel = viewModel,
+                        onAddLocation = onAddLocation,
+                        onLocationPicked = { pendingLocationCode = it },
+                    )
                     VisitViewModel.Step.EQUIPMENT -> EquipmentStep(
                         viewModel = viewModel,
                         photos = photos,
@@ -248,6 +253,7 @@ fun VisitScreen(
                 busy = busy,
                 outcome = outcome,
                 notes = notes,
+                pendingLocationCode = pendingLocationCode,
             )
         }
     }
@@ -279,6 +285,7 @@ private fun StepNavBar(
     busy: Boolean,
     outcome: ExportOutcome?,
     notes: String,
+    pendingLocationCode: String?,
 ) {
     Row(
         modifier = Modifier
@@ -286,6 +293,15 @@ private fun StepNavBar(
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (step == VisitViewModel.Step.LOCATION && outcome == null) {
+            Button(
+                onClick = { pendingLocationCode?.let { viewModel.chooseLocation(it) } },
+                enabled = pendingLocationCode != null && !busy,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.visit_next))
+            }
+        }
         if (step != VisitViewModel.Step.LOCATION && outcome == null) {
             OutlinedButton(
                 onClick = { viewModel.back() },
@@ -317,13 +333,15 @@ private fun StepNavBar(
 @Composable
 private fun LocationStep(
     viewModel: VisitViewModel,
-    onAddLocation: () -> Unit,
+    onAddLocation: (String?) -> Unit,
+    onLocationPicked: (String) -> Unit,
 ) {
     val tree by viewModel.hierarchyTree.collectAsState()
     var showPicker by remember { mutableStateOf(false) }
     var projectCode by remember { mutableStateOf<String?>(null) }
     var regionCode by remember { mutableStateOf<String?>(null) }
     var zoneCode by remember { mutableStateOf<String?>(null) }
+    var chosen by remember { mutableStateOf<TreeNode?>(null) }
 
     val project = tree.firstOrNull { it.code == projectCode }
     val region = project?.children?.firstOrNull { it.code == regionCode }
@@ -341,7 +359,9 @@ private fun LocationStep(
         project != null -> stringResource(R.string.visit_level_regions)
         else -> stringResource(R.string.visit_level_projects)
     }
-    val breadcrumb = listOfNotNull(project?.name, region?.name, zone?.name).joinToString(" ‹ ")
+    val pickerPath = listOfNotNull(project?.name, region?.name, zone?.name).joinToString(" ‹ ")
+    val chosenPath = buildChosenPath(tree, chosen)
+    val displayPath = if (chosen != null) chosenPath else pickerPath
 
     Column(
         modifier = Modifier
@@ -358,7 +378,7 @@ private fun LocationStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = breadcrumb.ifBlank { stringResource(R.string.visit_pick_location) },
+                text = displayPath.ifBlank { stringResource(R.string.visit_pick_location) },
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
             )
@@ -373,7 +393,7 @@ private fun LocationStep(
         }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
-            onClick = onAddLocation,
+            onClick = { onAddLocation(zone?.code ?: region?.code ?: project?.code) },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null)
@@ -388,9 +408,9 @@ private fun LocationStep(
             title = {
                 Column {
                     Text(levelTitle)
-                    if (breadcrumb.isNotBlank()) {
+                    if (pickerPath.isNotBlank()) {
                         Text(
-                            text = breadcrumb,
+                            text = pickerPath,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -427,8 +447,9 @@ private fun LocationStep(
                                     NodeType.REGION -> regionCode = node.code
                                     NodeType.ZONE -> zoneCode = node.code
                                     NodeType.LOCATION -> {
+                                        chosen = node
+                                        onLocationPicked(node.code)
                                         showPicker = false
-                                        viewModel.chooseLocation(node.code)
                                     }
                                 }
                             },
@@ -455,6 +476,25 @@ private fun LocationStep(
             },
         )
     }
+}
+
+/** مسار العقدة المختارة كاملًا (مشروع ‹ منطقة ‹ زون ‹ موقع). */
+private fun buildChosenPath(tree: List<TreeNode>, chosen: TreeNode?): String {
+    if (chosen == null) return ""
+    val acc = mutableListOf<String>()
+    fun rec(nodes: List<TreeNode>, path: List<String>): Boolean {
+        for (node in nodes) {
+            val newPath = path + node.name
+            if (node.code == chosen.code) {
+                acc.addAll(newPath)
+                return true
+            }
+            if (rec(node.children, newPath)) return true
+        }
+        return false
+    }
+    rec(tree, emptyList())
+    return acc.joinToString(" ‹ ")
 }
 
 @Composable
