@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ProTrack</string>
+    <string name="app_name">AccTracker</string>
     <string name="home_subtitle">Sites &amp; Maintenance Tracking</string>
     <string name="home_manage_locations">Manage Locations</string>
     <string name="home_new_visit">New Visit</string>
@@ -113,7 +113,7 @@
     <string name="report_eq_running">Running</string>
     <string name="report_eq_stopped">Stopped</string>
     <string name="report_photo_line">Photo</string>
-    <string name="report_footer">This report was generated automatically by ProTrack</string>
+    <string name="report_footer">This report was generated automatically by AccTracker</string>
     <string name="report_empty_equipment">No equipment recorded</string>
     <string name="report_empty_photos">No photos attached</string>
 

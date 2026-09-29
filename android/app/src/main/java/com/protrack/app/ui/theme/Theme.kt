@@ -7,43 +7,52 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+/**
+ * ثيم AccTracker — هوية Advanced Construction Co. ثابتة: فاتح دائمًا
+ * (أحمر #D2262C وأبيض) لتوحيد الشكل مهما كان وضع النظام (فاتح/داكن).
+ */
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF00695C),
+    primary = Color(0xFFD2262C),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFA7F3E6),
-    onPrimaryContainer = Color(0xFF00201A),
-    secondary = Color(0xFF4A6360),
+    primaryContainer = Color(0xFFFBDADD),
+    onPrimaryContainer = Color(0xFF3F0206),
+    secondary = Color(0xFF5F5E62),
     onSecondary = Color(0xFFFFFFFF),
-    background = Color(0xFFF5FAF8),
-    onBackground = Color(0xFF171D1B),
-    surface = Color(0xFFF5FAF8),
-    onSurface = Color(0xFF171D1B),
-    surfaceVariant = Color(0xFFDAE5E1),
-    onSurfaceVariant = Color(0xFF3F4946),
-    outline = Color(0xFF6F7975),
+    secondaryContainer = Color(0xFFE5E1E5),
+    onSecondaryContainer = Color(0xFF1B1B1F),
+    background = Color(0xFFFAF9FB),
+    onBackground = Color(0xFF1B1B1F),
+    surface = Color(0xFFFAF9FB),
+    onSurface = Color(0xFF1B1B1F),
+    surfaceVariant = Color(0xFFE5E1E5),
+    onSurfaceVariant = Color(0xFF47464A),
+    outline = Color(0xFF78767B),
+    error = Color(0xFFB3261E),
+    onError = Color(0xFFFFFFFF),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF8BD5C7),
-    onPrimary = Color(0xFF00382F),
-    primaryContainer = Color(0xFF005046),
-    onPrimaryContainer = Color(0xFFA7F3E6),
-    secondary = Color(0xFFB1CCC7),
-    onSecondary = Color(0xFF1C3531),
-    background = Color(0xFF101513),
-    onBackground = Color(0xFFDFE4E1),
-    surface = Color(0xFF101513),
-    onSurface = Color(0xFFDFE4E1),
-    surfaceVariant = Color(0xFF3F4946),
-    onSurfaceVariant = Color(0xFFBEC9C5),
-    outline = Color(0xFF89938F),
+    primary = Color(0xFFFFB3B4),
+    onPrimary = Color(0xFF67000A),
+    primaryContainer = Color(0xFF941019),
+    onPrimaryContainer = Color(0xFFFFDADA),
+    secondary = Color(0xFFC9C5CA),
+    onSecondary = Color(0xFF303034),
+    background = Color(0xFF141315),
+    onBackground = Color(0xFFE5E1E4),
+    surface = Color(0xFF141315),
+    onSurface = Color(0xFFE5E1E4),
+    surfaceVariant = Color(0xFF47464A),
+    onSurfaceVariant = Color(0xFFC9C5CA),
+    outline = Color(0xFF938F94),
 )
 
 @Composable
 fun ProTrackTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    // الهوية فاتحة دائمًا — نتجاهل الوضع الليلي لضمان شكل الشركة الموحد
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         content = content,

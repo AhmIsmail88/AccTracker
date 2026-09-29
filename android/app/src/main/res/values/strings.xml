@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ProTrack</string>
+    <string name="app_name">AccTracker</string>
     <string name="home_subtitle">نظام متابعة المواقع والصيانة</string>
     <string name="home_manage_locations">إدارة المواقع</string>
     <string name="home_new_visit">زيارة جديدة</string>
@@ -113,7 +113,7 @@
     <string name="report_eq_running">تعمل</string>
     <string name="report_eq_stopped">متوقفة</string>
     <string name="report_photo_line">صورة</string>
-    <string name="report_footer">تم إنشاء هذا التقرير آليًا بواسطة ProTrack</string>
+    <string name="report_footer">تم إنشاء هذا التقرير آليًا بواسطة AccTracker</string>
     <string name="report_empty_equipment">لا توجد معدات مسجلة</string>
     <string name="report_empty_photos">لا توجد صور مرفقة</string>
 

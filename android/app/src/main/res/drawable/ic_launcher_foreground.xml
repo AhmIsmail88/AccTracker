@@ -4,7 +4,24 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- المثلث الأبيض — علامة Advanced Construction Co. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,30 C54,30 40,48 40,59 a14,14 0 0 0 28,0 C68,48 54,30 54,30 z" />
+        android:pathData="M54,33 L77.5,73 L30.5,73 Z" />
+    <!-- حرف A أحمر (مساحة سلبية) -->
+    <path
+        android:strokeColor="#D2262C"
+        android:strokeWidth="4.4"
+        android:strokeLineCap="round"
+        android:pathData="M51.5,43.5 L43.5,64.5" />
+    <path
+        android:strokeColor="#D2262C"
+        android:strokeWidth="4.4"
+        android:strokeLineCap="round"
+        android:pathData="M56.5,43.5 L64.5,64.5" />
+    <path
+        android:strokeColor="#D2262C"
+        android:strokeWidth="4.4"
+        android:strokeLineCap="round"
+        android:pathData="M46.5,57 L61.5,57" />
 </vector>
