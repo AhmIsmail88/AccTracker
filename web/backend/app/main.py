@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app import config
-from app.api import alerts, assets, cloud, imports, locations, manuals, rules, visits
+from app.api import ai, alerts, assets, cloud, imports, locations, manuals, rules, visits
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.include_router(cloud.router)
 app.include_router(assets.router)
 app.include_router(visits.router)
 app.include_router(alerts.router)
+app.include_router(ai.router)
 
 
 @app.get("/api/health")

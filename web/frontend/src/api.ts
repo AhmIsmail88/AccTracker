@@ -216,6 +216,43 @@ export interface AssetDetail {
   };
 }
 
+export interface AiSourceRef {
+  manual_id?: number | null;
+  page?: number | null;
+  section?: string | null;
+}
+
+export interface AiActionItem {
+  action: string;
+  reason: string;
+  source: AiSourceRef;
+}
+
+export interface AiEvidenceItem {
+  type: string;
+  manual_id?: number | null;
+  page?: number | null;
+  asset_code?: string | null;
+  verified?: boolean;
+}
+
+export interface AiSuggestion {
+  id?: number;
+  asset_code: string;
+  model_name?: string | null;
+  severity: string;
+  confidence: string;
+  confidence_note?: string | null;
+  status: string;
+  summary?: string | null;
+  reason: string[];
+  maintenance_suggestions: AiActionItem[];
+  actions_dropped?: number;
+  evidence: AiEvidenceItem[];
+  created_at?: string | null;
+  reviewed_at?: string | null;
+}
+
 export interface AlertRow {
   key: string;
   type: string;

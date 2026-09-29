@@ -27,10 +27,11 @@ py -3.12 -m venv .venv
 | التعارضات | `GET /api/locations/conflicts` · `POST /api/locations/conflicts/{id}/resolve` |
 | استيراد حزمة | `POST /api/imports` (رفع ZIP) |
 | سجل الاستيراد | `GET /api/imports` |
-| الأصول | `GET /api/assets` · `GET /api/assets/{asset_code}` |
+| الأصول | `GET /api/assets` · `GET /api/assets/{asset_code}` (مع حالة الصيانة المحسوبة) |
 | الزيارات | `GET /api/visits` · `GET /api/visits/{visit_id}` · `GET /api/visits/{visit_id}/photos/{photo_id}/file` (عرض صورة) |
 | الـManuals | `POST /api/manuals` (رفع PDF) · `GET /api/manuals` · `GET /api/manuals/{id}` · `GET /api/manuals/{id}/chunks` · `GET /api/manuals/search?q=` |
 | قواعد الصيانة | `POST /api/manuals/{id}/extract-rules` (LLM محلي) · `GET /api/manuals/{id}/rules` · `GET /api/rules` · `PATCH /api/rules/{id}` (اعتماد/رفض/تعديل) |
+| تحليل AI للأصول | `POST /api/ai/analyze/{asset_code}` (§11 — تحليل ومقترحات بمراجع) · `GET /api/ai/suggestions` · `PATCH /api/ai/suggestions/{id}` (اعتماد/رفض المهندس §14) · `GET /api/ai/status` |
 | المزامنة السحابية | `GET /api/cloud/status` · `POST /api/cloud/pull` (سحب حزم Firebase واستيرادها) · CLI: `python -m app.scripts.pull_cloud` |
 | OCR للمانوالات الممسوحة | تلقائي عند الرفع (صفحات بلا نص) · `POST /api/manuals/{id}/ocr` (إعادة استخراج) — RapidOCR محلي بالكامل + تفكيك كلمات |
 | السحب الدوري (أولًا بأول) | `GET /api/cloud/auto` · `POST /api/cloud/auto` (تشغيل/إيقاف + ضبط الفترة) · `POST /api/cloud/auto/run` (دورة فورية) |
@@ -50,6 +51,7 @@ py -3.12 -m venv .venv
 
 ## ملاحظات
 
+- نماذج التفكير (qwen3.5 وأمثالها): عميل Ollama يمرر `think=false` افتراضيًا لأن مخرجاتنا JSON منظّم — نماذج التفكير قد تستهلك ميزانية التوليد كاملةً في التفكير فيرجع الرد فارغًا. لتفعيله: `PROTRAK_LLM_THINK=1`.
 - قاعدة البيانات الافتراضية: `data/protrack.db` (قابلة للتغيير عبر `PROTRAK_DB` / `PROTRAK_DATA_DIR`).
 - الصور المستوردة: `data/photos/<package_id>/`.
 - الاستيراد يعيد استخدام فحوص `tools/validate_package.py` — نفس مصدر الحقيقة (توقيع ECDSA + هاشات + قواعد الشيتات).

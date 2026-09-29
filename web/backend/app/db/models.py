@@ -274,3 +274,24 @@ class AppSetting(Base):
     key = Column(String, primary_key=True)
     value = Column(String, nullable=False)
     updated_at = Column(String, nullable=False, default=utcnow_iso)
+
+
+# ============ تحليل الصيانة بالذكاء الاصطناعي (§11) ============
+
+class AiSuggestion(Base):
+    __tablename__ = "ai_suggestion"
+
+    id = Column(Integer, primary_key=True)
+    asset_code = Column(String, nullable=False, index=True)
+    model_name = Column(String, nullable=True)          # نموذج الـLLM المستخدم
+    severity = Column(String, nullable=False, default="INFO")       # INFO / WARNING / CRITICAL
+    confidence = Column(String, nullable=False, default="LOW")      # HIGH / MEDIUM / LOW (§25)
+    confidence_note = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="SUGGESTED")    # SUGGESTED / APPROVED / REJECTED
+    summary = Column(Text, nullable=True)
+    reasons_json = Column(Text, nullable=True)
+    actions_json = Column(Text, nullable=True)
+    evidence_json = Column(Text, nullable=True)
+    context_json = Column(Text, nullable=True)          # لقطة السياق (شفافية/تتبع)
+    created_at = Column(String, nullable=False, default=utcnow_iso)
+    reviewed_at = Column(String, nullable=True)
