@@ -361,7 +361,7 @@ private fun LocationStep(
     }
     val pickerPath = listOfNotNull(project?.name, region?.name, zone?.name).joinToString(" ‹ ")
     val chosenPath = buildChosenPath(tree, chosen)
-    val displayPath = if (chosen != null) chosenPath else pickerPath
+    val displayPath = if (chosen != null) chosenPath else stringResource(R.string.visit_pick_location)
 
     Column(
         modifier = Modifier
@@ -438,6 +438,17 @@ private fun LocationStep(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
+                        TextButton(
+                            onClick = {
+                                showPicker = false
+                                onAddLocation(zone?.code ?: region?.code ?: project?.code)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.visit_add_location))
+                        }
                     }
                     items.forEach { node ->
                         TextButton(
