@@ -147,6 +147,75 @@ export interface VisitDetail {
   photos: VisitPhotoRow[];
 }
 
+export interface AssetHealthSummary {
+  status: string;
+  note: string | null;
+  current_hours: number | null;
+  hours_remaining: number | null;
+  due_at_hours: number | null;
+  rules_count: number;
+  readings_count: number;
+}
+
+export interface AssetRow {
+  asset_code: string;
+  location_code: string;
+  kind: string;
+  tag: string;
+  model: string | null;
+  status: string;
+  running_hours: number | null;
+  running_hours_at: string | null;
+  updated_at: string | null;
+  health: AssetHealthSummary;
+}
+
+export interface AssetRuleEval {
+  rule_id: number;
+  maintenance_type: string | null;
+  interval_hours?: number;
+  interval_days?: number;
+  description: string | null;
+  manual_id: number | null;
+  source_page: number | null;
+  source_section: string | null;
+  status: string;
+  hours_remaining: number | null;
+  due_at_hours?: number | null;
+  note?: string;
+}
+
+export interface AssetReading {
+  visit_id: string;
+  at: string | null;
+  hours: number | null;
+  pressure_bar: number | null;
+  status: string | null;
+}
+
+export interface AssetDetail {
+  asset_code: string;
+  location_code: string;
+  kind: string;
+  tag: string;
+  model: string | null;
+  status: string;
+  running_hours: number | null;
+  health: {
+    status: string;
+    note: string | null;
+    baseline_hours: number | null;
+    current_hours: number | null;
+    hours_remaining: number | null;
+    due_at_hours: number | null;
+    rules_count: number;
+    rules: AssetRuleEval[];
+    readings_count: number;
+    last_reading_at: string | null;
+    readings: AssetReading[];
+  };
+}
+
 export function countTree(tree: TreeNode[]): { projects: number; regions: number; zones: number; locations: number } {
   let projects = 0;
   let regions = 0;
