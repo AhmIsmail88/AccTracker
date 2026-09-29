@@ -253,6 +253,25 @@ export interface AiSuggestion {
   reviewed_at?: string | null;
 }
 
+export interface ChatSource {
+  type: string;
+  verified?: boolean;
+  manual_id?: number | null;
+  page?: number | null;
+  asset_code?: string | null;
+}
+
+export interface ChatResponse {
+  answer: string;
+  related_assets: string[];
+  sources: ChatSource[];
+  sources_dropped: number;
+  confidence: string;
+  confidence_note: string;
+  model_name: string | null;
+  context: { fleet: number; focus: number; chunks: number; alerts: number };
+}
+
 export interface AlertRow {
   key: string;
   type: string;

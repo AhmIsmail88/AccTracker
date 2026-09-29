@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""API تحليل الصيانة بالذكاء الاصطناعي (§11/§14/§16)."""
+"""API تحليل الصيانة بالذكاء الاصطناعي (§11/§14/§16) + المساعد الذكي (§28)."""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.base import get_db
 from app.services.ai_analysis import analyze_asset, list_suggestions, review_suggestion
+from app.services.ai_chat import chat_answer
 from app.services.llm import LLMUnavailable, get_client
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -15,6 +16,10 @@ router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 class ReviewIn(BaseModel):
     status: str
+
+
+class ChatIn(BaseModel):
+    question: str
 
 
 @router.get("/status")
@@ -63,3 +68,15 @@ def review(suggestion_id: int, payload: ReviewIn, db: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail="suggestion not found")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.post("/chat")
+def chat(payload: ChatIn, db: Session = Depends(get_db)):
+    """مساعد الصيانة الذكي: سؤال → RAG على المانوالات + سياق الأسطول → إجابة بمصادر."""
+    question = (payload.question or "").strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="question is required")
+    try:
+        return chat_answer(db, question)
+    except LLMUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
