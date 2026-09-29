@@ -31,7 +31,8 @@ py -3.12 -m venv .venv
 | الزيارات | `GET /api/visits` · `GET /api/visits/{visit_id}` · `GET /api/visits/{visit_id}/photos/{photo_id}/file` (عرض صورة) |
 | الـManuals | `POST /api/manuals` (رفع PDF) · `GET /api/manuals` · `GET /api/manuals/{id}` · `GET /api/manuals/{id}/chunks` · `GET /api/manuals/search?q=` |
 | قواعد الصيانة | `POST /api/manuals/{id}/extract-rules` (LLM محلي) · `GET /api/manuals/{id}/rules` · `GET /api/rules` · `PATCH /api/rules/{id}` (اعتماد/رفض/تعديل) |
-| تحليل AI للأصول | `POST /api/ai/analyze/{asset_code}` (§11 — تحليل ومقترحات بمراجع) · `GET /api/ai/suggestions` · `PATCH /api/ai/suggestions/{id}` (اعتماد/رفض المهندس §14) · `GET /api/ai/status` |
+| تحليل AI للأصول |
+| المساعد الذكي (RAG §28) | `POST /api/ai/chat` {question} — يجمع سياق الأسطول + التنبيهات + مقتطفات المانوالات ويجيب بمصادر موثّقة | `POST /api/ai/analyze/{asset_code}` (§11 — تحليل ومقترحات بمراجع) · `GET /api/ai/suggestions` · `PATCH /api/ai/suggestions/{id}` (اعتماد/رفض المهندس §14) · `GET /api/ai/status` |
 | المزامنة السحابية | `GET /api/cloud/status` · `POST /api/cloud/pull` (سحب حزم Firebase واستيرادها) · CLI: `python -m app.scripts.pull_cloud` |
 | OCR للمانوالات الممسوحة | تلقائي عند الرفع (صفحات بلا نص) · `POST /api/manuals/{id}/ocr` (إعادة استخراج) — RapidOCR محلي بالكامل + تفكيك كلمات |
 | السحب الدوري (أولًا بأول) | `GET /api/cloud/auto` · `POST /api/cloud/auto` (تشغيل/إيقاف + ضبط الفترة) · `POST /api/cloud/auto/run` (دورة فورية) |
