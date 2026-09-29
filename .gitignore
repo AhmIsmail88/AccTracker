@@ -16,3 +16,5 @@ android/.kotlin/
 android/local.properties
 android/build/
 android/app/build/
+*service-account*.json
+firebase-service-account*.json

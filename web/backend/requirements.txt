@@ -4,5 +4,6 @@ SQLAlchemy>=2.0
 alembic>=1.13
 python-multipart>=0.0.9
 pymupdf>=1.24
+firebase-admin>=6.5
 pytest>=8
 httpx>=0.27

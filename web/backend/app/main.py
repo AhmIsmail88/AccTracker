@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import assets, imports, locations, manuals, rules, visits
+from app.api import assets, cloud, imports, locations, manuals, rules, visits
 
 app = FastAPI(title="ProTrack Web API", version="0.1.0")
 
@@ -18,6 +18,7 @@ app.include_router(imports.router)
 app.include_router(locations.router)
 app.include_router(manuals.router)
 app.include_router(rules.router)
+app.include_router(cloud.router)
 app.include_router(assets.router)
 app.include_router(visits.router)
 

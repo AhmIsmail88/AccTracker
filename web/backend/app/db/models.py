@@ -251,3 +251,15 @@ class MaintenanceRule(Base):
     source_section = Column(String, nullable=True)
     confidence = Column(String, nullable=True)
     status = Column(String, nullable=False, default="DRAFT")
+
+
+# ============ Phase Cloud — سجل سحب الحزم من السحابة ============
+
+class CloudImport(Base):
+    __tablename__ = "cloud_import"
+
+    id = Column(Integer, primary_key=True)
+    file_name = Column(String, unique=True, nullable=False, index=True)
+    status = Column(String, nullable=False)
+    details_json = Column(Text, nullable=True)
+    pulled_at = Column(String, nullable=False, default=utcnow_iso)
