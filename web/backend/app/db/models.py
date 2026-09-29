@@ -263,3 +263,13 @@ class CloudImport(Base):
     status = Column(String, nullable=False)
     details_json = Column(Text, nullable=True)
     pulled_at = Column(String, nullable=False, default=utcnow_iso)
+
+
+# ============ إعدادات التطبيق (مفتاح/قيمة) ============
+
+class AppSetting(Base):
+    __tablename__ = "app_setting"
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(String, nullable=False, default=utcnow_iso)

@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type CloudPullResult, type CloudStatus } from "../api";
+import { api, type CloudAutoStatus, type CloudPullResult, type CloudStatus } from "../api";
+
+const INTERVALS: { value: number; label: string }[] = [
+  { value: 60, label: "كل دقيقة" },
+  { value: 300, label: "كل 5 دقايق" },
+  { value: 900, label: "كل ربع ساعة" },
+  { value: 1800, label: "كل نص ساعة" },
+];
+
+function intervalLabel(seconds: number): string {
+  return INTERVALS.find((i) => i.value === seconds)?.label ?? `كل ${seconds} ثانية`;
+}
 
 export default function CloudPage() {
   const [status, setStatus] = useState<CloudStatus | null>(null);
+  const [auto, setAuto] = useState<CloudAutoStatus | null>(null);
   const [result, setResult] = useState<CloudPullResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -10,6 +22,7 @@ export default function CloudPage() {
   const loadStatus = useCallback(async () => {
     try {
       setStatus(await api<CloudStatus>("/api/cloud/status"));
+      setAuto(await api<CloudAutoStatus>("/api/cloud/auto"));
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
@@ -17,6 +30,8 @@ export default function CloudPage() {
 
   useEffect(() => {
     void loadStatus();
+    const t = window.setInterval(() => void loadStatus(), 20000);
+    return () => window.clearInterval(t);
   }, [loadStatus]);
 
   const pull = async () => {
@@ -29,6 +44,29 @@ export default function CloudPage() {
       setError(String((e as Error).message ?? e));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const setAutoMode = async (enabled: boolean, interval_seconds?: number) => {
+    setError(null);
+    try {
+      setAuto(
+        await api<CloudAutoStatus>("/api/cloud/auto", {
+          method: "POST",
+          body: JSON.stringify({ enabled, interval_seconds }),
+        }),
+      );
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  };
+
+  const runAutoNow = async () => {
+    setError(null);
+    try {
+      setAuto(await api<CloudAutoStatus>("/api/cloud/auto/run", { method: "POST" }));
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
     }
   };
 
@@ -65,7 +103,7 @@ export default function CloudPage() {
         </div>
 
         <div className="card">
-          <h3>سحب الحزم الجديدة</h3>
+          <h3>سحب يدوي الآن</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
             يسحب كل الحزم التي لم تُعالَج بعد (بدون تكرار) ويستوردها مباشرة.
           </p>
@@ -73,6 +111,56 @@ export default function CloudPage() {
             {busy ? "جارٍ السحب…" : "اسحب الآن"}
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3>السحب التلقائي (أولًا بأول)</h3>
+        {!auto ? (
+          <div className="loading">جارٍ التحميل…</div>
+        ) : (
+          <>
+            <div className="toolbar" style={{ marginBottom: 8 }}>
+              <button
+                className={auto.enabled ? "btn" : "btn primary"}
+                onClick={() => void setAutoMode(!auto.enabled)}
+              >
+                {auto.enabled ? "إيقاف السحب التلقائي" : "تشغيل السحب التلقائي"}
+              </button>
+              <select
+                value={auto.interval_seconds}
+                onChange={(e) => void setAutoMode(auto.enabled, Number(e.target.value))}
+                disabled={!auto.enabled}
+                style={{ font: "inherit", padding: "9px 12px", borderRadius: 10, border: "1px solid var(--line)" }}
+              >
+                {INTERVALS.map((i) => (
+                  <option key={i.value} value={i.value}>
+                    {i.label}
+                  </option>
+                ))}
+              </select>
+              <button className="btn" onClick={() => void runAutoNow()} disabled={!auto.configured}>
+                دورة سحب الآن
+              </button>
+            </div>
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              {auto.enabled
+                ? `مفعّل — يسحب تلقائيًا ${intervalLabel(auto.interval_seconds)} ويستورد الوارد أولًا بأول.`
+                : "متوقف — الحزم تُسحب يدويًا فقط."}
+            </p>
+            {(auto.last_run_at || auto.last_error) && (
+              <p className="muted" style={{ fontSize: 13, margin: "6px 0 0" }}>
+                {auto.last_run_at && <>آخر دورة: {auto.last_run_at}</>}
+                {auto.last_result && (
+                  <>
+                    {" "}
+                    — فُحصت {auto.last_result.checked}، استُوردت {auto.last_result.processed}
+                  </>
+                )}
+                {auto.last_error && <> — ⚠ {auto.last_error}</>}
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       {error && (

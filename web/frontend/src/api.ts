@@ -71,6 +71,17 @@ export interface CloudStatus {
   service_account_path: string | null;
 }
 
+export interface CloudAutoStatus {
+  enabled: boolean;
+  interval_seconds: number;
+  min_interval: number;
+  max_interval: number;
+  configured: boolean;
+  last_run_at: string | null;
+  last_result: { checked: number; processed: number } | null;
+  last_error: string | null;
+}
+
 export interface CloudPullResult {
   checked: number;
   processed: number;

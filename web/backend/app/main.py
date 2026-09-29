@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """نقطة تشغيل تطبيق ProTrack Web API."""
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -9,7 +10,20 @@ from fastapi.staticfiles import StaticFiles
 from app import config
 from app.api import assets, cloud, imports, locations, manuals, rules, visits
 
-app = FastAPI(title="ProTrack Web API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """دورة حياة الخادم: يشغّل السحب السحابي الدوري (لو مفعّل) ويوقفه عند الإغلاق."""
+    from app.services.auto_pull import manager as auto_manager
+
+    auto_manager.bootstrap()
+    try:
+        yield
+    finally:
+        auto_manager.shutdown()
+
+
+app = FastAPI(title="ProTrack Web API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
