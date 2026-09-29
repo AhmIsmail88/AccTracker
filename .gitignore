@@ -18,3 +18,5 @@ android/build/
 android/app/build/
 *service-account*.json
 firebase-service-account*.json
+web/frontend/node_modules/
+web/frontend/dist/
