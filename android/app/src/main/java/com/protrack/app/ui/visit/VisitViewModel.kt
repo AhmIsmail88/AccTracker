@@ -150,9 +150,27 @@ class VisitViewModel(
         return photoManager.newPhotoFile(id)
     }
 
+    /** يلتقط صورة ويسجلها مع اسم الموقع (للختم على الصورة). */
     fun attachPhoto(targetType: String, targetRef: String, file: File) {
         val id = _visitId.value ?: return
-        viewModelScope.launch { photoManager.attachPhoto(id, targetType, targetRef, file) }
+        viewModelScope.launch {
+            val visit = visitRepository.visitById(id)
+            val siteName = visit?.locationCode?.let { code -> findNodeByCode(code)?.name }
+            photoManager.attachPhoto(id, targetType, targetRef, file, siteName)
+        }
+    }
+
+    private suspend fun findNodeByCode(code: String): TreeNode? {
+        val data = hierarchyRepository.data.first()
+        val tree = TreeBuilder.build(data.projects, data.regions, data.zones, data.locations)
+        fun rec(nodes: List<TreeNode>): TreeNode? {
+            for (node in nodes) {
+                if (node.code == code) return node
+                rec(node.children)?.let { return it }
+            }
+            return null
+        }
+        return rec(tree)
     }
 
     fun next() {

@@ -110,12 +110,12 @@ class PackageBuilderTest {
             assertTrue(names.contains("visit.xlsx"))
             assertTrue(names.contains("manifest.json"))
             assertTrue(names.contains("manifest.sig"))
-            assertTrue(names.contains("photos/IMG_001.jpg"))
+            assertTrue(names.contains("photos/equipment/IMG_001.jpg"))
 
             val manifestBytes = zf.getInputStream(zf.getEntry("manifest.json")).readBytes()
             val manifestText = String(manifestBytes, Charsets.UTF_8)
             assertTrue(manifestText.contains("\"package_id\""))
-            assertTrue(manifestText.contains("photos/IMG_001.jpg"))
+            assertTrue(manifestText.contains("photos/equipment/IMG_001.jpg"))
             assertTrue(manifestText.contains("\"capture_sig\""))
 
             val sigB64 = String(

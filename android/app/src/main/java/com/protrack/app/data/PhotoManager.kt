@@ -20,13 +20,14 @@ import java.util.Locale
 
 /**
  * إدارة صور الزيارة: مسار الحفظ داخل مجلد التطبيق، والبصمة (SHA-256)،
- * وتوقيع الالتقاط (capture_sig) بمفتاح الجهاز، مع ختم التاريخ والموقع على الصورة نفسها.
+ * وتوقيع الالتقاط (capture_sig) بمفتاح الجهاز، مع ختم التاريخ والموقع والفني على الصورة.
  */
 class PhotoManager(
     private val context: Context,
     private val visitRepository: VisitRepository,
     private val deviceInfo: DeviceInfoProvider,
     private val locationProvider: LocationProvider,
+    private val settings: AppSettings,
 ) {
 
     /** ملف وجهة جديد للكاميرا (تُكتب الصورة فيه مباشرة من الكاميرا). */
@@ -36,17 +37,18 @@ class PhotoManager(
         return File(dir, "IMG_$stamp.jpg")
     }
 
-    /** بعد الالتقاط: ختم التاريخ/الموقع على الصورة + البصمة + التوقيع + الموقع ويسجّل الصف. */
+    /** بعد الالتقاط: ختم (تاريخ + GPS + الموقع + الفني) + البصمة + التوقيع ويسجّل الصف. */
     suspend fun attachPhoto(
         visitRefId: Long,
         targetType: String,
         targetRef: String,
         file: File,
+        locationName: String? = null,
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val fix = locationProvider.lastKnown()
             val takenAt = OffsetDateTime.now()
-            stampPhoto(file, takenAt, fix?.lat, fix?.lon)
+            stampPhoto(file, takenAt, fix?.lat, fix?.lon, locationName, settings.technicianName)
             val bytes = file.readBytes()
             val sha = PackageBuilder.sha256Hex(bytes)
             val sig = Base64.getEncoder().encodeToString(deviceInfo.signer.sign(bytes))
@@ -71,10 +73,17 @@ class PhotoManager(
     }
 
     /**
-     * يرسم شريطًا سفليًا على الصورة يحمل التاريخ/الوقت والإحداثيات (قبل حساب البصمة).
-     * يصحّح اتجاه EXIF أولًا حتى يظهر الختم في المكان الصحيح دائمًا.
+     * يرسم شريطًا سفليًا على الصورة يحمل: التاريخ/الوقت، الإحداثيات، اسم الموقع، واسم الفني
+     * (قبل حساب البصمة). يصحّح اتجاه EXIF أولًا حتى يظهر الختم في المكان الصحيح دائمًا.
      */
-    private fun stampPhoto(file: File, time: OffsetDateTime, lat: Double?, lon: Double?) {
+    private fun stampPhoto(
+        file: File,
+        time: OffsetDateTime,
+        lat: Double?,
+        lon: Double?,
+        locationName: String?,
+        technicianName: String?,
+    ) {
         var decoded: Bitmap? = null
         var target: Bitmap? = null
         try {
@@ -115,27 +124,44 @@ class PhotoManager(
             val canvas = Canvas(target)
             val w = target.width.toFloat()
             val h = target.height.toFloat()
-            val text1 = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-            val text2 = if (lat != null && lon != null) {
+
+            val lines = mutableListOf<String>()
+            lines += time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            lines += if (lat != null && lon != null) {
                 String.format(Locale.US, "GPS %.5f, %.5f", lat, lon)
             } else {
                 "GPS N/A"
             }
-            val textSize = (w / 42f).coerceAtLeast(22f)
+            if (!locationName.isNullOrBlank()) {
+                lines += "الموقع: $locationName"
+            }
+            if (!technicianName.isNullOrBlank()) {
+                lines += "الفني: $technicianName"
+            }
+
+            val baseSize = (w / 42f).coerceAtLeast(20f)
             val paint = Paint().apply {
                 isAntiAlias = true
                 color = Color.WHITE
-                this.textSize = textSize
+                textSize = baseSize
                 typeface = Typeface.DEFAULT_BOLD
                 setShadowLayer(4f, 0f, 2f, Color.BLACK)
             }
-            val pad = textSize * 0.6f
-            val lineHeight = textSize * 1.35f
-            val boxTop = h - (lineHeight * 2 + pad * 2)
+            val pad = baseSize * 0.6f
+            val lineHeight = baseSize * 1.35f
+            val boxTop = h - (lineHeight * lines.size + pad * 2)
             val background = Paint().apply { color = Color.argb(120, 0, 0, 0) }
             canvas.drawRect(0f, boxTop, w, h, background)
-            canvas.drawText(text1, pad, boxTop + pad + textSize, paint)
-            canvas.drawText(text2, pad, boxTop + pad + textSize + lineHeight, paint)
+
+            lines.forEachIndexed { index, line ->
+                var size = baseSize
+                paint.textSize = size
+                while (paint.measureText(line) > w - pad * 2 && size > 10f) {
+                    size *= 0.94f
+                    paint.textSize = size
+                }
+                canvas.drawText(line, pad, boxTop + pad + size + index * lineHeight, paint)
+            }
 
             file.outputStream().use { out ->
                 target.compress(Bitmap.CompressFormat.JPEG, 92, out)

@@ -23,7 +23,7 @@ class VisitRepository(private val dao: VisitDao) {
                 VisitChecklistEntity(visitRefId = id, itemCode = item.code, sortOrder = (index + 1).toLong()),
             )
         }
-        // انسخ معدات آخر زيارة لنفس الموقع بالظبط (نفس عقدة الشجرة) — بقراءات جديدة للزيارة الحالية فقط
+        // معدات آخر زيارة لنفس الموقع بالظبط (نفس عقدة الشجرة) — بقراءات جديدة للزيارة الحالية فقط
         val lastVisit = dao.lastVisitForLocation(locationCode, id)
         if (lastVisit != null) {
             dao.equipmentOnce(lastVisit.id).forEach { e ->

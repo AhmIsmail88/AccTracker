@@ -36,7 +36,7 @@ class AppContainer(context: Context) {
     private val deviceInfo = DeviceInfoProvider(appContext)
     private val locationProvider = LocationProvider(appContext)
 
-    val photoManager = PhotoManager(appContext, visitRepository, deviceInfo, locationProvider)
+    val photoManager = PhotoManager(appContext, visitRepository, deviceInfo, locationProvider, settings)
     val exporter: PackageExporter =
         PackageExporter(appContext, visitRepository, repository, deviceInfo, settings)
 }

@@ -179,7 +179,7 @@ class PackageBuilder(private val signer: PackageSigner) {
             val sha = sha256Hex(p.bytes)
             val sig = Base64.getEncoder().encodeToString(signer.sign(p.bytes))
             photosSheet.add(
-                listOf<Any?>(i + 1, p.fileName, p.targetType, p.targetRef, p.takenAt, p.lat, p.lon, p.accuracyM, sha, sig),
+                listOf<Any?>(i + 1, photoRelPath(p), p.targetType, p.targetRef, p.takenAt, p.lat, p.lon, p.accuracyM, sha, sig),
             )
         }
         sheets += XlsxWriter.plain("photos", photosSheet, hidden = true)
@@ -190,7 +190,7 @@ class PackageBuilder(private val signer: PackageSigner) {
         files += ManifestFile(path = "visit.xlsx", sha256 = sha256Hex(xlsx))
         photos.forEach { p ->
             files += ManifestFile(
-                path = "photos/${p.fileName}",
+                path = "photos/" + photoRelPath(p),
                 sha256 = sha256Hex(p.bytes),
                 takenAt = p.takenAt,
                 lat = p.lat,
@@ -211,7 +211,7 @@ class PackageBuilder(private val signer: PackageSigner) {
                 zos.closeEntry()
             }
             put("visit.xlsx", xlsx)
-            photos.forEach { put("photos/${it.fileName}", it.bytes) }
+            photos.forEach { put("photos/" + photoRelPath(it), it.bytes) }
             put("manifest.json", manifestBytes)
             put("manifest.sig", manifestSigB64.toByteArray(Charsets.US_ASCII))
         }
@@ -487,6 +487,10 @@ class PackageBuilder(private val signer: PackageSigner) {
         "MINOR" -> XlsxStyle.MINOR
         else -> XlsxStyle.FAULT
     }
+
+    /** مجلد الصور حسب النوع: صور المعدات و صور بنود المتابعة في فولدرين منفصلين. */
+    private fun photoRelPath(photo: ExportPhoto): String =
+        (if (photo.targetType == "CHECKLIST") "checklist" else "equipment") + "/" + photo.fileName
 
     companion object {
         fun sha256Hex(data: ByteArray): String {
