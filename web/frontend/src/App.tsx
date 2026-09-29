@@ -12,6 +12,7 @@ import StockPage from "./pages/StockPage";
 import WorkOrdersPage from "./pages/WorkOrdersPage";
 import SettingsPage from "./pages/SettingsPage";
 import DevicesPage from "./pages/DevicesPage";
+import ReportsPage from "./pages/ReportsPage";
 
 type Tab =
   | "dashboard"
@@ -22,6 +23,7 @@ type Tab =
   | "chat"
   | "workorders"
   | "stock"
+  | "reports"
   | "imports"
   | "cloud"
   | "manuals"
@@ -37,6 +39,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "chat", label: "المساعد الذكي" },
   { id: "workorders", label: "أوامر العمل" },
   { id: "stock", label: "المخزون" },
+  { id: "reports", label: "التقارير" },
   { id: "imports", label: "الحزم المستوردة" },
   { id: "cloud", label: "المزامنة السحابية" },
   { id: "manuals", label: "المانوالات" },
@@ -97,6 +100,7 @@ export default function App() {
         {tab === "chat" && <ChatPage />}
         {tab === "workorders" && <WorkOrdersPage />}
         {tab === "stock" && <StockPage />}
+        {tab === "reports" && <ReportsPage />}
         {tab === "imports" && <ImportsPage />}
         {tab === "cloud" && <CloudPage />}
         {tab === "manuals" && <ManualsPage />}

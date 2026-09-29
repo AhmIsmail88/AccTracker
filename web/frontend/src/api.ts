@@ -380,6 +380,19 @@ export interface DeviceRow {
   visits: string[];
 }
 
+export interface ReportTable {
+  kind: string;
+  generated_at: string;
+  columns?: string[];
+  rows?: Record<string, unknown>[];
+  suggestions?: Record<string, unknown>[];
+  counts?: Record<string, number>;
+  asset_status?: Record<string, number>;
+  work_order_status?: Record<string, number>;
+  stock?: Record<string, number>;
+  alerts?: Record<string, number>;
+}
+
 export function countTree(tree: TreeNode[]): { projects: number; regions: number; zones: number; locations: number } {
   let projects = 0;
   let regions = 0;
