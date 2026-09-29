@@ -59,4 +59,66 @@ class TreeBuilderTest {
         assertEquals(2, expandedRows.size)
         assertEquals(1, expandedRows[1].depth)
     }
+
+    // ===================== الحالات المرنة (تخطي مستويات ناقصة) =====================
+
+    @Test
+    fun locationDirectlyUnderProjectSkipsMissingLevels() {
+        val tree = TreeBuilder.build(
+            projects = listOf(project("PRJ-001", "مشروع الخندق")),
+            regions = emptyList(),
+            zones = emptyList(),
+            locations = listOf(location("LOC-001", "PRJ-001", "غرفة المضخات")),
+        )
+        assertEquals(1, tree.size)
+        val locationNode = tree[0].children[0]
+        assertEquals(NodeType.LOCATION, locationNode.type)
+        assertEquals("LOC-001", locationNode.code)
+        assertEquals("غرفة المضخات", locationNode.name)
+    }
+
+    @Test
+    fun zoneDirectlyUnderProjectSkipsRegion() {
+        val tree = TreeBuilder.build(
+            projects = listOf(project("PRJ-001", "P")),
+            regions = emptyList(),
+            zones = listOf(zone("ZN-001", "PRJ-001", "زون مباشر")),
+            locations = listOf(location("LOC-001", "ZN-001", "موقع")),
+        )
+        val zoneNode = tree[0].children[0]
+        assertEquals(NodeType.ZONE, zoneNode.type)
+        assertEquals("ZN-001", zoneNode.code)
+        assertEquals(NodeType.LOCATION, zoneNode.children[0].type)
+    }
+
+    @Test
+    fun mixedChildrenUnderSameParentAreAllAttached() {
+        val tree = TreeBuilder.build(
+            projects = listOf(project("PRJ-001", "P")),
+            regions = listOf(region("RGN-001", "PRJ-001", "R")),
+            zones = emptyList(),
+            locations = listOf(
+                location("LOC-001", "PRJ-001", "موقع مباشر"),
+                location("LOC-002", "RGN-001", "موقع تحت المنطقة"),
+            ),
+        )
+        val projectChildren = tree[0].children
+        assertEquals(2, projectChildren.size)
+        assertTrue(projectChildren.any { it.code == "LOC-001" })
+        val regionNode = projectChildren.first { it.code == "RGN-001" }
+        assertEquals(1, regionNode.children.size)
+        assertEquals("LOC-002", regionNode.children[0].code)
+    }
+
+    @Test
+    fun orphanNodesAreNotAttached() {
+        val tree = TreeBuilder.build(
+            projects = listOf(project("PRJ-001", "P")),
+            regions = listOf(region("RGN-999", "PRJ-404", "يتيم")),
+            zones = emptyList(),
+            locations = emptyList(),
+        )
+        assertEquals(1, tree.size)
+        assertTrue(tree[0].children.isEmpty())
+    }
 }
