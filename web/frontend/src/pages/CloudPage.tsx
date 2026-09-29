@@ -58,7 +58,7 @@ export default function CloudPage() {
               <p className="muted" style={{ fontSize: 13, lineHeight: 1.8 }}>
                 {status.configured
                   ? "ملف الاعتماد موجود — جاهز للسحب."
-                  : "لتفعيل السحب: نزّل ملف Service Account من Firebase Console (Project settings ← Service accounts ← Generate new private key) وضعه في web/backend/data/firebase-service-account.json ثم أعد تشغيل الخادم."}
+                  : `لتفعيل السحب: نزّل ملف Service Account من Firebase Console (Project settings ← Service accounts ← Generate new private key) وضعه في: ${status.service_account_path ?? "مجلد بيانات الخادم"} ثم أعد تشغيل الخادم.`}
               </p>
             </>
           )}

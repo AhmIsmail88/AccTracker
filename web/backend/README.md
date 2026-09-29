@@ -53,3 +53,29 @@ py -3.12 -m venv .venv
 - الاستيراد يعيد استخدام فحوص `tools/validate_package.py` — نفس مصدر الحقيقة (توقيع ECDSA + هاشات + قواعد الشيتات).
 - قواعد دمج التقسيم مطبقة حرفيًا من §4.5 — والتفاصيل في `contract/README.md`.
 - صيغة `asset_code` عند إنشاء أصل من الحزمة: `<LOCATION_CODE>-<ABBREV>-<TAG>` مثل `LOC-001-MP-03`.
+
+## تحزيم سطح المكتب (EXE)
+
+الخادم يخدم واجهة الويب المبنية تلقائيًا من `web/frontend/dist` عند وجودها — يعني EXE واحد فيه اللوحة + الـAPI.
+
+خطوات البناء:
+
+```powershell
+# 1) ابنِ الواجهة
+cd web\frontend
+npm install        # أول مرة فقط
+npm run build      # ينتج dist/
+
+# 2) ثبّت PyInstaller (أول مرة فقط)
+cd ..\backend
+.venv\Scripts\python -m pip install pyinstaller
+
+# 3) ابنِ الـEXE
+.venv\Scripts\pyinstaller acctracker_desktop.spec --noconfirm --distpath dist_desktop --workpath build_desktop
+```
+
+الناتج: `web\backend\dist_desktop\AccTracker.exe` — دبل-كليك يشغّل اللوحة على `http://127.0.0.1:8000` (أو أول منفذ شاغر) ويفتح المتصفح تلقائيًا.
+
+- مجلد البيانات (قاعدة البيانات + الصور) يُنشأ بجانب الـEXE في `data\`، ويمكن تغييره بـ`PROTRAK_DATA_DIR`.
+- لتفعيل السحب السحابي: ضع `firebase-service-account.json` في مجلد `data\` بجانب الـEXE.
+- البناء يشمل: الواجهة المبنية + tools/ + contract/ + alembic/ (تحديث قاعدة البيانات تلقائيًا عند التشغيل).
