@@ -216,6 +216,26 @@ export interface AssetDetail {
   };
 }
 
+export interface AlertRow {
+  key: string;
+  type: string;
+  severity: "CRITICAL" | "WARNING" | "INFO";
+  title: string;
+  detail: string | null;
+  asset_code: string | null;
+  location_code: string | null;
+  visit_id: string | null;
+  ref: Record<string, unknown>;
+  at: string | null;
+}
+
+export interface AlertsResponse {
+  counts: { CRITICAL: number; WARNING: number; INFO: number };
+  total: number;
+  filtered: number;
+  alerts: AlertRow[];
+}
+
 export function countTree(tree: TreeNode[]): { projects: number; regions: number; zones: number; locations: number } {
   let projects = 0;
   let regions = 0;
