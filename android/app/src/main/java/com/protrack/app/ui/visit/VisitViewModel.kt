@@ -114,6 +114,10 @@ class VisitViewModel(
         viewModelScope.launch { visitRepository.updateEquipment(entity) }
     }
 
+    fun deleteEquipment(entity: VisitEquipmentEntity) {
+        viewModelScope.launch { visitRepository.deleteEquipment(entity) }
+    }
+
     fun setChecklistStatus(item: VisitChecklistEntity, status: String) {
         viewModelScope.launch { visitRepository.updateChecklist(item.copy(status = status)) }
     }

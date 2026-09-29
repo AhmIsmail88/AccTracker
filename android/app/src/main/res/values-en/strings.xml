@@ -142,6 +142,8 @@
     <string name="report_signature_line">Signature: ________________</string>
     <string name="visit_pick_location">Tap to choose a location</string>
     <string name="visit_add_location">Add new location</string>
+    <string name="equipment_delete_title">Delete equipment</string>
+    <string name="equipment_delete_confirm">Delete "%1$s"?</string>
     <string name="visit_level_projects">Choose project</string>
     <string name="visit_level_regions">Choose region</string>
     <string name="visit_level_zones">Choose zone</string>

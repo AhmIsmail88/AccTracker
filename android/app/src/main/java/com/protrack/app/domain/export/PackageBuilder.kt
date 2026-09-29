@@ -373,8 +373,13 @@ class PackageBuilder(private val signer: PackageSigner) {
             mergeRow(r, "A", "F")
         } else {
             photos.forEachIndexed { i, p ->
+                val gps = if (p.lat != 0.0 || p.lon != 0.0) {
+                    " — GPS " + String.format(Locale.US, "%.4f, %.4f", p.lat, p.lon)
+                } else {
+                    ""
+                }
                 val r = nextRow(
-                    six(cell("${labels.photoLabel} ${i + 1} — ${p.fileName} — ${shortDateTime(p.takenAt)}", XlsxStyle.VALUE)),
+                    six(cell("${labels.photoLabel} ${i + 1} — ${p.fileName} — ${shortDateTime(p.takenAt)}$gps", XlsxStyle.VALUE)),
                 )
                 mergeRow(r, "A", "F")
             }

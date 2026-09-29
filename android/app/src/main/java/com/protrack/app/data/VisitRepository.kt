@@ -23,6 +23,20 @@ class VisitRepository(private val dao: VisitDao) {
                 VisitChecklistEntity(visitRefId = id, itemCode = item.code, sortOrder = (index + 1).toLong()),
             )
         }
+        // انسخ معدات آخر زيارة لنفس الموقع بالظبط (نفس عقدة الشجرة) — بقراءات جديدة للزيارة الحالية فقط
+        val lastVisit = dao.lastVisitForLocation(locationCode, id)
+        if (lastVisit != null) {
+            dao.equipmentOnce(lastVisit.id).forEach { e ->
+                dao.insertEquipment(
+                    VisitEquipmentEntity(
+                        visitRefId = id,
+                        kind = e.kind,
+                        tag = e.tag,
+                        model = e.model,
+                    ),
+                )
+            }
+        }
         return id
     }
 
@@ -63,6 +77,8 @@ class VisitRepository(private val dao: VisitDao) {
     }
 
     suspend fun updateEquipment(entity: VisitEquipmentEntity) = dao.updateEquipment(entity)
+
+    suspend fun deleteEquipment(entity: VisitEquipmentEntity) = dao.deleteEquipment(entity.id)
 
     suspend fun updateChecklist(entity: VisitChecklistEntity) = dao.updateChecklist(entity)
 

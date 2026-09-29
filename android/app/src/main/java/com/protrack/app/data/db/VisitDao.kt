@@ -63,6 +63,12 @@ interface VisitDao {
     @Query("DELETE FROM visit_checklist_item WHERE id = :id")
     suspend fun deleteChecklist(id: Long)
 
+    @Query("DELETE FROM visit_equipment WHERE id = :id")
+    suspend fun deleteEquipment(id: Long)
+
+    @Query("SELECT * FROM visit WHERE locationCode = :code AND id <> :excludeId ORDER BY id DESC LIMIT 1")
+    suspend fun lastVisitForLocation(code: String, excludeId: Long): VisitEntity?
+
     @Query("SELECT * FROM visit ORDER BY id DESC")
     suspend fun allVisitsOnce(): List<VisitEntity>
 

@@ -142,6 +142,8 @@
     <string name="report_signature_line">التوقيع: ________________</string>
     <string name="visit_pick_location">اضغط لاختيار الموقع</string>
     <string name="visit_add_location">إضافة موقع جديد</string>
+    <string name="equipment_delete_title">حذف المعدة</string>
+    <string name="equipment_delete_confirm">متأكد إنك عايز تحذف "%1$s"؟</string>
     <string name="visit_level_projects">اختر المشروع</string>
     <string name="visit_level_regions">اختر المنطقة</string>
     <string name="visit_level_zones">اختر الزون</string>

@@ -527,6 +527,7 @@ private fun EquipmentStep(
     val equipment by viewModel.equipment.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var editTarget by remember { mutableStateOf<VisitEquipmentEntity?>(null) }
+    var deleteTarget by remember { mutableStateOf<VisitEquipmentEntity?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -599,10 +600,37 @@ private fun EquipmentStep(
                 onAddPhoto("EQUIPMENT", "${entity.kind}-${entity.tag}")
                 editTarget = null
             },
+            onDelete = {
+                deleteTarget = entity
+                editTarget = null
+            },
             onDismiss = { editTarget = null },
             onSave = { updated ->
                 viewModel.updateEquipment(updated)
                 editTarget = null
+            },
+        )
+    }
+
+    deleteTarget?.let { entity ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(stringResource(R.string.equipment_delete_title)) },
+            text = { Text(stringResource(R.string.equipment_delete_confirm, "${entity.tag} — ${entity.model}")) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteEquipment(entity)
+                        deleteTarget = null
+                    },
+                ) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
             },
         )
     }
@@ -1053,6 +1081,7 @@ private fun EquipmentEditDialog(
     entity: VisitEquipmentEntity,
     photos: List<VisitPhotoEntity>,
     onAddPhoto: () -> Unit,
+    onDelete: () -> Unit,
     onDismiss: () -> Unit,
     onSave: (VisitEquipmentEntity) -> Unit,
 ) {
@@ -1130,19 +1159,27 @@ private fun EquipmentEditDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    onSave(
-                        entity.copy(
-                            runningHours = hours.toDoubleOrNull(),
-                            pressureBar = pressure.toDoubleOrNull(),
-                            status = status,
-                            note = note,
-                        ),
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onDelete) {
+                    Text(
+                        text = stringResource(R.string.equipment_delete_title),
+                        color = MaterialTheme.colorScheme.error,
                     )
-                },
-            ) {
-                Text(stringResource(R.string.save))
+                }
+                TextButton(
+                    onClick = {
+                        onSave(
+                            entity.copy(
+                                runningHours = hours.toDoubleOrNull(),
+                                pressureBar = pressure.toDoubleOrNull(),
+                                status = status,
+                                note = note,
+                            ),
+                        )
+                    },
+                ) {
+                    Text(stringResource(R.string.save))
+                }
             }
         },
         dismissButton = {
