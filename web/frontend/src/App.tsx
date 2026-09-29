@@ -8,8 +8,21 @@ import VisitsPage from "./pages/VisitsPage";
 import AssetsPage from "./pages/AssetsPage";
 import AlertsPage from "./pages/AlertsPage";
 import ChatPage from "./pages/ChatPage";
+import StockPage from "./pages/StockPage";
+import WorkOrdersPage from "./pages/WorkOrdersPage";
 
-type Tab = "dashboard" | "locations" | "visits" | "assets" | "alerts" | "chat" | "imports" | "cloud" | "manuals";
+type Tab =
+  | "dashboard"
+  | "locations"
+  | "visits"
+  | "assets"
+  | "alerts"
+  | "chat"
+  | "workorders"
+  | "stock"
+  | "imports"
+  | "cloud"
+  | "manuals";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "لوحة المتابعة" },
@@ -18,6 +31,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "assets", label: "الأصول" },
   { id: "alerts", label: "التنبيهات" },
   { id: "chat", label: "المساعد الذكي" },
+  { id: "workorders", label: "أوامر العمل" },
+  { id: "stock", label: "المخزون" },
   { id: "imports", label: "الحزم المستوردة" },
   { id: "cloud", label: "المزامنة السحابية" },
   { id: "manuals", label: "المانوالات" },
@@ -74,6 +89,8 @@ export default function App() {
         {tab === "assets" && <AssetsPage />}
         {tab === "alerts" && <AlertsPage />}
         {tab === "chat" && <ChatPage />}
+        {tab === "workorders" && <WorkOrdersPage />}
+        {tab === "stock" && <StockPage />}
         {tab === "imports" && <ImportsPage />}
         {tab === "cloud" && <CloudPage />}
         {tab === "manuals" && <ManualsPage />}

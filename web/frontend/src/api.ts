@@ -292,6 +292,79 @@ export interface AlertsResponse {
   alerts: AlertRow[];
 }
 
+export interface SparePartRow {
+  id: number;
+  part_code: string;
+  name: string;
+  manufacturer: string | null;
+  model: string | null;
+  unit: string;
+  min_stock: number;
+  unit_cost: number | null;
+  notes: string | null;
+  stock?: number;
+  low_stock?: boolean;
+}
+
+export interface StockMovementRow {
+  id: number;
+  part_id: number;
+  part_code: string | null;
+  part_name: string | null;
+  movement_type: string;
+  qty: number;
+  work_order_id: number | null;
+  reference: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export interface PurchaseSuggestion {
+  part_id: number;
+  part_code: string;
+  name: string;
+  unit: string;
+  stock: number;
+  min_stock: number;
+  suggested_qty: number;
+  est_cost: number | null;
+}
+
+export interface WoPartRow {
+  id: number;
+  part_id: number;
+  part_code: string | null;
+  part_name: string | null;
+  unit: string | null;
+  planned_qty: number;
+  issued_qty: number;
+  returned_qty: number;
+  unit_cost: number | null;
+  cost: number;
+}
+
+export interface WorkOrderRow {
+  id: number;
+  wo_number: string;
+  asset_code: string | null;
+  location_code: string | null;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  source: string | null;
+  source_ref: string | null;
+  assigned_to: string | null;
+  opened_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  closing_note: string | null;
+  parts_count: number;
+  planned_cost: number;
+  parts_cost: number;
+  parts?: WoPartRow[];
+}
+
 export function countTree(tree: TreeNode[]): { projects: number; regions: number; zones: number; locations: number } {
   let projects = 0;
   let regions = 0;

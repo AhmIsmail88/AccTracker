@@ -33,6 +33,8 @@ py -3.12 -m venv .venv
 | قواعد الصيانة | `POST /api/manuals/{id}/extract-rules` (LLM محلي) · `GET /api/manuals/{id}/rules` · `GET /api/rules` · `PATCH /api/rules/{id}` (اعتماد/رفض/تعديل) |
 | تحليل AI للأصول |
 | المساعد الذكي (RAG §28) | `POST /api/ai/chat` {question} — يجمع سياق الأسطول + التنبيهات + مقتطفات المانوالات ويجيب بمصادر موثّقة | `POST /api/ai/analyze/{asset_code}` (§11 — تحليل ومقترحات بمراجع) · `GET /api/ai/suggestions` · `PATCH /api/ai/suggestions/{id}` (اعتماد/رفض المهندس §14) · `GET /api/ai/status` |
+| المخزون — قطع الغيار | `GET /api/stock/parts` (مع الرصيد) · `POST /api/stock/parts` · `GET /api/stock/movements` · `POST /api/stock/movements` (IN/OUT/RETURN/ADJUST) · `GET /api/stock/suggestions` (اقتراحات شراء) |
+| أوامر العمل | `GET /api/work-orders` · `POST /api/work-orders` · `GET/PATCH /api/work-orders/{id}` · `POST /api/work-orders/{id}/parts` · `.../parts/{part}/issue` + `.../return` (إصدار/إرجاع مع حركة مخزون وأحداث) |
 | المزامنة السحابية | `GET /api/cloud/status` · `POST /api/cloud/pull` (سحب حزم Firebase واستيرادها) · CLI: `python -m app.scripts.pull_cloud` |
 | OCR للمانوالات الممسوحة | تلقائي عند الرفع (صفحات بلا نص) · `POST /api/manuals/{id}/ocr` (إعادة استخراج) — RapidOCR محلي بالكامل + تفكيك كلمات |
 | السحب الدوري (أولًا بأول) | `GET /api/cloud/auto` · `POST /api/cloud/auto` (تشغيل/إيقاف + ضبط الفترة) · `POST /api/cloud/auto/run` (دورة فورية) |

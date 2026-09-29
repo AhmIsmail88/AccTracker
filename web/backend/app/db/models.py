@@ -295,3 +295,68 @@ class AiSuggestion(Base):
     context_json = Column(Text, nullable=True)          # لقطة السياق (شفافية/تتبع)
     created_at = Column(String, nullable=False, default=utcnow_iso)
     reviewed_at = Column(String, nullable=True)
+
+
+# ============ Phase 6 — المخزون (قطع الغيار + الحركات) ============
+
+class SparePart(Base):
+    __tablename__ = "spare_part"
+
+    id = Column(Integer, primary_key=True)
+    part_code = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    manufacturer = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    unit = Column(String, nullable=False, default="قطعة")
+    min_stock = Column(Float, nullable=False, default=0.0)      # حد إعادة الطلب
+    unit_cost = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(String, nullable=False, default=utcnow_iso)
+    updated_at = Column(String, nullable=False, default=utcnow_iso)
+
+
+class StockMovement(Base):
+    __tablename__ = "stock_movement"
+
+    id = Column(Integer, primary_key=True)
+    part_id = Column(Integer, ForeignKey("spare_part.id"), nullable=False, index=True)
+    movement_type = Column(String, nullable=False)   # IN / OUT / RETURN / ADJUST
+    qty = Column(Float, nullable=False)
+    work_order_id = Column(Integer, ForeignKey("work_order.id"), nullable=True)
+    reference = Column(String, nullable=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(String, nullable=False, default=utcnow_iso)
+
+
+# ============ Phase 6 — أوامر العمل (§20) ============
+
+class WorkOrder(Base):
+    __tablename__ = "work_order"
+
+    id = Column(Integer, primary_key=True)
+    wo_number = Column(String, unique=True, nullable=False, index=True)
+    asset_code = Column(String, nullable=True, index=True)
+    location_code = Column(String, nullable=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="OPEN")        # OPEN / IN_PROGRESS / DONE / CANCELLED
+    priority = Column(String, nullable=False, default="MEDIUM")    # LOW / MEDIUM / HIGH / CRITICAL
+    source = Column(String, nullable=True)                          # MANUAL / AI / ALERT
+    source_ref = Column(String, nullable=True)                      # مرجع المصدر (مثلاً رقم اقتراح AI)
+    assigned_to = Column(String, nullable=True)
+    opened_at = Column(String, nullable=False, default=utcnow_iso)
+    updated_at = Column(String, nullable=False, default=utcnow_iso)
+    closed_at = Column(String, nullable=True)
+    closing_note = Column(Text, nullable=True)
+
+
+class WorkOrderPart(Base):
+    __tablename__ = "work_order_part"
+
+    id = Column(Integer, primary_key=True)
+    work_order_id = Column(Integer, ForeignKey("work_order.id"), nullable=False, index=True)
+    part_id = Column(Integer, ForeignKey("spare_part.id"), nullable=False)
+    planned_qty = Column(Float, nullable=False, default=0.0)
+    issued_qty = Column(Float, nullable=False, default=0.0)
+    returned_qty = Column(Float, nullable=False, default=0.0)
+    unit_cost = Column(Float, nullable=True)
