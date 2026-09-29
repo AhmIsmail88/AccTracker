@@ -28,9 +28,21 @@ def _add_all(name):
         pass
 
 
-for pkg in ("uvicorn", "firebase_admin", "alembic", "fitz", "pymupdf"):
+for pkg in ("uvicorn", "firebase_admin", "alembic", "fitz", "pymupdf", "rapidocr_onnxruntime", "onnxruntime", "wordninja", "cv2"):
     _add_all(pkg)
     hiddenimports.extend(collect_submodules(pkg))
+
+# wordninja: موديول wordninja.py + مجلد بيانات منفصل (wordninja/wordninja_words.txt.gz)
+# collect_all لا يلتقط ملف القاموس — نضيفه يدويًا حتى يعمل داخل الـEXE
+import importlib.util as _ilu
+
+_wn_spec = _ilu.find_spec("wordninja")
+if _wn_spec and _wn_spec.origin:
+    _wn_gz = os.path.join(
+        os.path.dirname(os.path.abspath(_wn_spec.origin)), "wordninja", "wordninja_words.txt.gz"
+    )
+    if os.path.exists(_wn_gz):
+        datas.append((_wn_gz, "wordninja"))
 
 for pkg in (
     "google.cloud.firestore",

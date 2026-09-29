@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.db.base import get_db
 from app.db.models import Manual, MaintenanceRule, ManualChunk, ManualSection
-from app.services.manuals import ingest_manual, search_chunks
+from app.services.manuals import ingest_manual, reocr_manual, search_chunks
+from app.services.ocr import OcrUnavailable
 from app.services.rules import LLMUnavailable, extract_rules, rule_to_dict
 
 router = APIRouter(prefix="/api/manuals", tags=["manuals"])
@@ -59,6 +60,7 @@ def list_manuals(db: Session = Depends(get_db)):
         "status": m.status,
         "uploaded_at": m.uploaded_at,
         "chunks": counts.get(m.id, 0),
+        "ocr_pages": m.ocr_pages or 0,
     } for m in items]
 
 
@@ -76,6 +78,17 @@ def extract_manual_rules(manual_id: int, limit_chunks: int = 25, db: Session = D
     except LookupError:
         raise HTTPException(status_code=404, detail="manual not found")
     except LLMUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+
+@router.post("/{manual_id}/ocr")
+def reocr(manual_id: int, db: Session = Depends(get_db)):
+    """إعادة استخراج المانوال مع OCR للصفحات الممسوحة."""
+    try:
+        return reocr_manual(db, manual_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="manual not found")
+    except OcrUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 
 
@@ -120,6 +133,7 @@ def get_manual(manual_id: int, db: Session = Depends(get_db)):
             "revision": manual.revision,
             "status": manual.status,
             "uploaded_at": manual.uploaded_at,
+            "ocr_pages": manual.ocr_pages or 0,
         },
         "chunks": chunk_count,
         "sections": [{

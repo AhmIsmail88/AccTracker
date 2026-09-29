@@ -209,6 +209,7 @@ class Manual(Base):
     sha256 = Column(String, unique=True, nullable=True)
     uploaded_at = Column(String, nullable=True)
     status = Column(String, nullable=False, default="READY")
+    ocr_pages = Column(Integer, nullable=False, default=0)
 
 
 class ManualSection(Base):

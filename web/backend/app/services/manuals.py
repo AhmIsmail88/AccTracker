@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Phase 3 — الـManuals: رفع PDF → استخراج نص → تقسيم أقسام → تقطيع → فهرسة FTS5 → بحث.
+"""Phase 3 — الـManuals: رفع PDF → استخراج نص (مع OCR للصفحات الممسوحة) → أقسام → تقطيع → FTS5.
 
 راجع ARCHITECTURE.md §6 و§18 (جداول manual / manual_section / manual_chunk).
 """
@@ -12,10 +12,13 @@ from sqlalchemy.orm import Session
 
 from app import config
 from app.db.models import Manual, ManualChunk, ManualSection
+from app.services import ocr as ocr_service
 
 MANUALS_DIR = config.DATA_DIR / "manuals"
 CHUNK_SIZE = 900
 CHUNK_OVERLAP = 150
+SPARSE_TEXT_MIN = 15  # أقل من هذا العدد من الأحرف = صفحة بدون طبقة نص (ممسوحة)
+OCR_RENDER_DPI = 200
 
 FTS_TABLE_DDL = (
     "CREATE VIRTUAL TABLE IF NOT EXISTS manual_chunk_fts "
@@ -51,13 +54,32 @@ def _is_heading(line: str) -> bool:
     return False
 
 
-def extract_pages(pdf_path) -> list:
-    """استخراج نص كل صفحة عبر PyMuPDF."""
+def extract_pages(pdf_path, *, enable_ocr: bool = True) -> tuple:
+    """استخراج نص كل صفحة عبر PyMuPDF، مع OCR احتياطي للصفحات الممسوحة.
+
+    يرجّع (قائمة الصفحات، عدد الصفحات المستخرجة عبر OCR).
+    """
     import fitz  # PyMuPDF
 
     doc = fitz.open(str(pdf_path))
     try:
-        return [{"page": i, "text": (page.get_text("text") or "")} for i, page in enumerate(doc, start=1)]
+        pages = []
+        ocr_pages = 0
+        use_ocr = bool(enable_ocr) and ocr_service.is_available()
+        for i, page in enumerate(doc, start=1):
+            text = page.get_text("text") or ""
+            if len(text.strip()) < SPARSE_TEXT_MIN and use_ocr:
+                try:
+                    zoom = OCR_RENDER_DPI / 72.0
+                    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+                    ocr_text, _conf = ocr_service.run_ocr(pix.tobytes("png"))
+                    if len((ocr_text or "").strip()) >= SPARSE_TEXT_MIN:
+                        text = ocr_text
+                        ocr_pages += 1
+                except Exception:  # noqa: BLE001 — فشل صفحة واحدة لا يفشل الرفع
+                    pass
+            pages.append({"page": i, "text": text})
+        return pages, ocr_pages
     finally:
         doc.close()
 
@@ -135,44 +157,11 @@ def ensure_fts(db: Session) -> None:
     db.execute(sql_text(FTS_TABLE_DDL))
 
 
-def ingest_manual(
-    db: Session,
-    *,
-    title: str,
-    manufacturer: str = "",
-    model: str = "",
-    equipment_kind: str = "",
-    revision: str = "",
-    filename: str = "manual.pdf",
-    file_bytes: bytes,
-) -> dict:
-    sha = _sha256(file_bytes)
-    existing = db.query(Manual).filter(Manual.sha256 == sha).first()
-    if existing is not None:
-        return {"status": "DUPLICATE", "manual_id": existing.id, "title": existing.title}
-
-    MANUALS_DIR.mkdir(parents=True, exist_ok=True)
-    safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", filename or "manual.pdf")
-    dest = MANUALS_DIR / ("%s_%s" % (sha[:12], safe_name))
-    dest.write_bytes(file_bytes)
-
-    pages = extract_pages(dest)
+def _process_manual(db: Session, manual: Manual) -> dict:
+    """(يعيد) بناء الأقسام والمقاطع وفهرس FTS لملف مانوال — يستخدمه الرفع وإعادة الـOCR."""
+    pages, ocr_pages = extract_pages(manual.file_path)
     sections = _sections_from_pages(pages)
-    scanned_pages = [p["page"] for p in pages if len((p["text"] or "").strip()) < 15]
-
-    manual = Manual(
-        title=title,
-        manufacturer=manufacturer or None,
-        model=model or None,
-        equipment_kind=equipment_kind or None,
-        revision=revision or None,
-        file_path=str(dest),
-        sha256=sha,
-        uploaded_at=_now(),
-        status="READY",
-    )
-    db.add(manual)
-    db.flush()
+    manual.ocr_pages = ocr_pages
 
     for s in sections:
         db.add(ManualSection(
@@ -205,17 +194,92 @@ def ingest_manual(
         ),
         {"mid": manual.id},
     )
+
+    scanned_pages = [p["page"] for p in pages if len((p["text"] or "").strip()) < SPARSE_TEXT_MIN]
+    return {
+        "pages": len(pages),
+        "sections": len(sections),
+        "chunks": chunk_count,
+        "ocr_pages": ocr_pages,
+        "scanned_pages": scanned_pages,
+    }
+
+
+def ingest_manual(
+    db: Session,
+    *,
+    title: str,
+    manufacturer: str = "",
+    model: str = "",
+    equipment_kind: str = "",
+    revision: str = "",
+    filename: str = "manual.pdf",
+    file_bytes: bytes,
+) -> dict:
+    sha = _sha256(file_bytes)
+    existing = db.query(Manual).filter(Manual.sha256 == sha).first()
+    if existing is not None:
+        return {"status": "DUPLICATE", "manual_id": existing.id, "title": existing.title}
+
+    MANUALS_DIR.mkdir(parents=True, exist_ok=True)
+    safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", filename or "manual.pdf")
+    dest = MANUALS_DIR / ("%s_%s" % (sha[:12], safe_name))
+    dest.write_bytes(file_bytes)
+
+    manual = Manual(
+        title=title,
+        manufacturer=manufacturer or None,
+        model=model or None,
+        equipment_kind=equipment_kind or None,
+        revision=revision or None,
+        file_path=str(dest),
+        sha256=sha,
+        uploaded_at=_now(),
+        status="READY",
+    )
+    db.add(manual)
+    db.flush()
+
+    counts = _process_manual(db, manual)
     db.commit()
 
     return {
         "status": "READY",
         "manual_id": manual.id,
-        "pages": len(pages),
-        "sections": len(sections),
-        "chunks": chunk_count,
-        "scanned_pages": scanned_pages,
-        "ocr_note": ("بعض الصفحات بدون نص — تحتاج OCR (مرحلة لاحقة)" if scanned_pages else None),
+        "pages": counts["pages"],
+        "sections": counts["sections"],
+        "chunks": counts["chunks"],
+        "ocr_pages": counts["ocr_pages"],
+        "scanned_pages": counts["scanned_pages"],
+        "ocr_note": (
+            "بعض الصفحات بلا نص حتى بعد OCR — جودة مسح منخفضة"
+            if counts["scanned_pages"]
+            else None
+        ),
     }
+
+
+def reocr_manual(db: Session, manual_id: int) -> dict:
+    """يعيد استخراج المانوال مع OCR (مفيد بعد تثبيت/تحديث المحرك أو لجودة مسح أفضل)."""
+    if not ocr_service.is_available():
+        raise ocr_service.OcrUnavailable("محرك OCR غير متاح على الخادم")
+
+    manual = db.get(Manual, manual_id)
+    if manual is None:
+        raise LookupError("manual not found")
+
+    # مسح المحتوى القديم (المقاطع + فهرس FTS) وإعادة البناء
+    ensure_fts(db)
+    db.execute(
+        sql_text("DELETE FROM manual_chunk_fts WHERE manual_id = :mid"), {"mid": manual_id}
+    )
+    db.query(ManualChunk).filter(ManualChunk.manual_id == manual_id).delete()
+    db.query(ManualSection).filter(ManualSection.manual_id == manual_id).delete()
+    db.flush()
+
+    counts = _process_manual(db, manual)
+    db.commit()
+    return {"status": "READY", "manual_id": manual_id, **counts}
 
 
 def _fts_query(raw: str) -> str:
