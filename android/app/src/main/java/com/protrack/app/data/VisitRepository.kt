@@ -107,6 +107,10 @@ class VisitRepository(private val dao: VisitDao) {
     suspend fun markExported(id: Long, packageName: String) =
         dao.markExported(id, packageName, OffsetDateTime.now().toString())
 
+    suspend fun pendingCloudUploads(): List<VisitEntity> = dao.pendingCloudUploads()
+
+    suspend fun markCloudUploaded(id: Long) = dao.markCloudUploaded(id, OffsetDateTime.now().toString())
+
     suspend fun deleteChecklistItem(entity: VisitChecklistEntity) = dao.deleteChecklist(entity.id)
 
     suspend fun allVisitsOnce(): List<VisitEntity> = dao.allVisitsOnce()

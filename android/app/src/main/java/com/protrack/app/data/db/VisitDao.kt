@@ -60,6 +60,12 @@ interface VisitDao {
     @Query("UPDATE visit SET status = 'EXPORTED', packageName = :packageName, exportedAt = :exportedAt WHERE id = :id")
     suspend fun markExported(id: Long, packageName: String, exportedAt: String)
 
+    @Query("SELECT * FROM visit WHERE status = 'EXPORTED' AND cloudUploadedAt IS NULL")
+    suspend fun pendingCloudUploads(): List<VisitEntity>
+
+    @Query("UPDATE visit SET cloudUploadedAt = :at WHERE id = :id")
+    suspend fun markCloudUploaded(id: Long, at: String)
+
     @Query("DELETE FROM visit_checklist_item WHERE id = :id")
     suspend fun deleteChecklist(id: Long)
 

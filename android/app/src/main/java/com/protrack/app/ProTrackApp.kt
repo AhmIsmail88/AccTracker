@@ -10,10 +10,17 @@ import com.protrack.app.data.LocationProvider
 import com.protrack.app.data.PackageExporter
 import com.protrack.app.data.PhotoManager
 import com.protrack.app.data.VisitRepository
+import com.protrack.app.data.cloud.PackageSyncWorker
 import com.protrack.app.data.db.AppDatabase
 
 class ProTrackApp : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        // فرصة مزامنة حزم معلقة مع كل تشغيل للتطبيق (لا تفعل شيئًا إن لا يوجد شيء معلّق)
+        PackageSyncWorker.enqueue(this)
+    }
 }
 
 class AppContainer(context: Context) {
@@ -24,7 +31,7 @@ class AppContainer(context: Context) {
         appContext,
         AppDatabase::class.java,
         "protrack.db",
-    ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
+    ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
         .fallbackToDestructiveMigration()
         .build()
 
@@ -33,7 +40,7 @@ class AppContainer(context: Context) {
     val repository: HierarchyRepository = HierarchyRepository(database.hierarchyDao(), database.visitDao())
     val visitRepository: VisitRepository = VisitRepository(database.visitDao())
 
-    private val deviceInfo = DeviceInfoProvider(appContext)
+    val deviceInfo = DeviceInfoProvider(appContext)
     private val locationProvider = LocationProvider(appContext)
 
     val photoManager = PhotoManager(appContext, visitRepository, deviceInfo, locationProvider, settings)

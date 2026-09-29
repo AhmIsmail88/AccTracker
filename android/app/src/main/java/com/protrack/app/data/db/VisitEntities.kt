@@ -17,6 +17,7 @@ data class VisitEntity(
     val status: String = "DRAFT",
     val packageName: String? = null,
     val exportedAt: String? = null,
+    val cloudUploadedAt: String? = null,
 )
 
 @Entity(tableName = "visit_equipment")

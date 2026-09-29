@@ -3,6 +3,7 @@ package com.protrack.app.data
 import android.content.Context
 import android.content.res.Configuration
 import com.protrack.app.R
+import com.protrack.app.data.cloud.PackageSyncWorker
 import com.protrack.app.domain.ChecklistCatalog
 import com.protrack.app.domain.NodeType
 import com.protrack.app.domain.export.ExportChecklist
@@ -139,6 +140,8 @@ class PackageExporter(
             if (toSync.isNotEmpty()) {
                 hierarchyRepository.markSynced(toSync)
             }
+            // مزامنة سحابية تلقائية أول ما النت يتوفر
+            PackageSyncWorker.enqueue(context)
 
             ExportOutcome(true, null, file, fileName)
         } catch (e: Exception) {

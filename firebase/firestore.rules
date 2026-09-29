@@ -1,0 +1,9 @@
+rules_version = '2';
+// قواعد Firestore — AccTracker: أي مستخدم موثّق (جهاز فني مجهول أو مهندس) يرفع/يقرأ سجلات الحزم.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /packages/{pkg} {
+      allow read, create, update: if request.auth != null;
+    }
+  }
+}

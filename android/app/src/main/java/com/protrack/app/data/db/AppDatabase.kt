@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         VisitEntity::class, VisitEquipmentEntity::class, VisitChecklistEntity::class,
         VisitPhotoEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -44,6 +44,13 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `visit_checklist_item` ADD COLUMN `isCustom` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE `visit_checklist_item` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("UPDATE `visit_checklist_item` SET `sortOrder` = `id`")
+            }
+        }
+
+        /** v4 → v5: تتبع رفع الحزمة للسحابة (Offline-First Sync). */
+        val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `visit` ADD COLUMN `cloudUploadedAt` TEXT")
             }
         }
     }
