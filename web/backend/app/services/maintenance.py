@@ -16,6 +16,7 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import Equipment, EquipmentEvent, MaintenanceRule, Visit, VisitEquipment
+from app.services.settings import get_maintenance_config
 
 # ترتيب شدة الحالة (تختار «الأسوأ» عند وجود أكثر من قاعدة)
 STATUS_ORDER = {
@@ -30,16 +31,21 @@ STATUS_ORDER = {
 SOON_MIN_HOURS = 25.0  # حد أدنى لعتبة «قريب»
 
 
-def compute_due_status(interval_hours: float, baseline_hours: float, current_hours: float) -> tuple:
-    """يحسب (الحالة، الساعات المتبقية) لقاعدة فترة بالساعات."""
+def compute_due_status(interval_hours: float, baseline_hours: float, current_hours: float,
+                       grace_hours: float = 0.0, soon_percent: float = 10.0,
+                       soon_min_hours: float = SOON_MIN_HOURS) -> tuple:
+    """يحسب (الحالة، الساعات المتبقية) لقاعدة فترة بالساعات.
+
+    grace_hours: فترة سماح بعد الاستحقاق قبل اعتبارها «متأخرة» (§23 — من Settings).
+    """
     interval = float(interval_hours)
     used = max(0.0, float(current_hours) - float(baseline_hours))
     remaining = interval - used
-    soon_threshold = max(interval * 0.1, SOON_MIN_HOURS)
-    if remaining < -1e-9:
+    soon_threshold = max(interval * float(soon_percent) / 100.0, float(soon_min_hours))
+    if remaining < -(float(grace_hours) + 1e-9):
         return "MAINTENANCE_OVERDUE", remaining
     if remaining <= 1e-9:
-        return "MAINTENANCE_DUE", 0.0
+        return "MAINTENANCE_DUE", max(remaining, -float(grace_hours))
     if remaining <= soon_threshold:
         return "MAINTENANCE_SOON", remaining
     return "NORMAL", remaining
@@ -98,6 +104,7 @@ def asset_health(db: Session, equipment: Equipment, include_readings: bool = Tru
     if readings and readings[-1]["hours"] is not None:
         current = readings[-1]["hours"]
     baseline = readings[0]["hours"] if readings and readings[0]["hours"] is not None else None
+    mcfg = get_maintenance_config(db)
 
     rules = _approved_rules(db, equipment)
     evaluations = []
@@ -116,7 +123,12 @@ def asset_health(db: Session, equipment: Equipment, include_readings: bool = Tru
             if baseline is None or current is None:
                 item.update({"status": "UNKNOWN", "hours_remaining": None, "note": "لا توجد قراءات مسجّلة"})
             else:
-                status, remaining = compute_due_status(r.interval_hours, baseline, current)
+                status, remaining = compute_due_status(
+                    r.interval_hours, baseline, current,
+                    grace_hours=mcfg["grace_hours"],
+                    soon_percent=mcfg["soon_percent"],
+                    soon_min_hours=mcfg["soon_min_hours"],
+                )
                 item.update({"status": status, "hours_remaining": round(remaining, 1)})
             evaluations.append(item)
         elif r.interval_days:

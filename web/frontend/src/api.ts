@@ -365,6 +365,21 @@ export interface WorkOrderRow {
   parts?: WoPartRow[];
 }
 
+export interface SettingsResponse {
+  values: Record<string, number>;
+  defaults?: Record<string, number>;
+}
+
+export interface DeviceRow {
+  device_id: string;
+  fingerprint: string | null;
+  packages: number;
+  imported_ok: number;
+  last_seen: string | null;
+  last_file: string | null;
+  visits: string[];
+}
+
 export function countTree(tree: TreeNode[]): { projects: number; regions: number; zones: number; locations: number } {
   let projects = 0;
   let regions = 0;

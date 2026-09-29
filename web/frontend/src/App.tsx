@@ -10,6 +10,8 @@ import AlertsPage from "./pages/AlertsPage";
 import ChatPage from "./pages/ChatPage";
 import StockPage from "./pages/StockPage";
 import WorkOrdersPage from "./pages/WorkOrdersPage";
+import SettingsPage from "./pages/SettingsPage";
+import DevicesPage from "./pages/DevicesPage";
 
 type Tab =
   | "dashboard"
@@ -22,7 +24,9 @@ type Tab =
   | "stock"
   | "imports"
   | "cloud"
-  | "manuals";
+  | "manuals"
+  | "devices"
+  | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "لوحة المتابعة" },
@@ -36,6 +40,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "imports", label: "الحزم المستوردة" },
   { id: "cloud", label: "المزامنة السحابية" },
   { id: "manuals", label: "المانوالات" },
+  { id: "devices", label: "الأجهزة" },
+  { id: "settings", label: "الإعدادات" },
 ];
 
 function LogoMark() {
@@ -94,6 +100,8 @@ export default function App() {
         {tab === "imports" && <ImportsPage />}
         {tab === "cloud" && <CloudPage />}
         {tab === "manuals" && <ManualsPage />}
+        {tab === "devices" && <DevicesPage />}
+        {tab === "settings" && <SettingsPage />}
       </main>
 
       <footer className="footer">
