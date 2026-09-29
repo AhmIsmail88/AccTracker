@@ -4,12 +4,14 @@ import LocationsPage from "./pages/LocationsPage";
 import ImportsPage from "./pages/ImportsPage";
 import CloudPage from "./pages/CloudPage";
 import ManualsPage from "./pages/ManualsPage";
+import VisitsPage from "./pages/VisitsPage";
 
-type Tab = "dashboard" | "locations" | "imports" | "cloud" | "manuals";
+type Tab = "dashboard" | "locations" | "visits" | "imports" | "cloud" | "manuals";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "لوحة المتابعة" },
   { id: "locations", label: "شجرة المواقع" },
+  { id: "visits", label: "الزيارات" },
   { id: "imports", label: "الحزم المستوردة" },
   { id: "cloud", label: "المزامنة السحابية" },
   { id: "manuals", label: "المانوالات" },
@@ -62,6 +64,7 @@ export default function App() {
       <main className="main">
         {tab === "dashboard" && <DashboardPage />}
         {tab === "locations" && <LocationsPage />}
+        {tab === "visits" && <VisitsPage />}
         {tab === "imports" && <ImportsPage />}
         {tab === "cloud" && <CloudPage />}
         {tab === "manuals" && <ManualsPage />}

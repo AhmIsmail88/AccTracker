@@ -28,7 +28,7 @@ py -3.12 -m venv .venv
 | استيراد حزمة | `POST /api/imports` (رفع ZIP) |
 | سجل الاستيراد | `GET /api/imports` |
 | الأصول | `GET /api/assets` · `GET /api/assets/{asset_code}` |
-| الزيارات | `GET /api/visits` · `GET /api/visits/{visit_id}` |
+| الزيارات | `GET /api/visits` · `GET /api/visits/{visit_id}` · `GET /api/visits/{visit_id}/photos/{photo_id}/file` (عرض صورة) |
 | الـManuals | `POST /api/manuals` (رفع PDF) · `GET /api/manuals` · `GET /api/manuals/{id}` · `GET /api/manuals/{id}/chunks` · `GET /api/manuals/search?q=` |
 | قواعد الصيانة | `POST /api/manuals/{id}/extract-rules` (LLM محلي) · `GET /api/manuals/{id}/rules` · `GET /api/rules` · `PATCH /api/rules/{id}` (اعتماد/رفض/تعديل) |
 | المزامنة السحابية | `GET /api/cloud/status` · `POST /api/cloud/pull` (سحب حزم Firebase واستيرادها) · CLI: `python -m app.scripts.pull_cloud` |

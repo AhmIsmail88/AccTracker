@@ -103,8 +103,48 @@ export interface ConflictRow {
 export interface VisitRow {
   visit_id: string;
   location_code: string;
-  status: string;
+  visit_type: string;
   started_at: string;
+  ended_at: string | null;
+  status: string;
+  package_id: string;
+  imported_at: string;
+}
+
+export interface VisitEquipmentRow {
+  kind: string;
+  tag: string;
+  model: string;
+  running_hours: number | null;
+  pressure_bar: number | null;
+  status: string;
+}
+
+export interface VisitChecklistRow {
+  item_code: string;
+  status: string;
+}
+
+export interface VisitPhotoRow {
+  id: number;
+  target_type: string;
+  target_ref: string;
+  taken_at: string | null;
+  lat: number | null;
+  lon: number | null;
+  url: string | null;
+}
+
+export interface VisitDetail {
+  visit_id: string;
+  location_code: string;
+  visit_type: string;
+  started_at: string;
+  ended_at: string | null;
+  status: string;
+  equipment: VisitEquipmentRow[];
+  checklist: VisitChecklistRow[];
+  photos: VisitPhotoRow[];
 }
 
 export function countTree(tree: TreeNode[]): { projects: number; regions: number; zones: number; locations: number } {

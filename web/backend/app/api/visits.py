@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-"""API الزيارات المستوردة."""
+"""API الزيارات المستوردة + عرض ملفات صور الزيارة."""
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from app import config
 from app.db.base import get_db
 from app.db.models import Visit, VisitChecklist, VisitEquipment, VisitPhoto
 
@@ -36,6 +40,30 @@ def get_visit(visit_id: str, db: Session = Depends(get_db)):
         } for e in equips],
         "checklist": [{"item_code": c.item_code, "status": c.status} for c in checks],
         "photos": [{
-            "file": p.file_path, "target_type": p.target_type, "target_ref": p.target_ref,
+            "id": p.id, "target_type": p.target_type, "target_ref": p.target_ref,
+            "taken_at": p.taken_at, "lat": p.lat, "lon": p.lon,
+            "url": ("/api/visits/%s/photos/%d/file" % (v.visit_id, p.id)) if p.file_path else None,
         } for p in photos],
     }
+
+
+@router.get("/{visit_id}/photos/{photo_id}/file")
+def get_visit_photo_file(visit_id: str, photo_id: int, db: Session = Depends(get_db)):
+    """يعرض صورة زيارة — بفحص أمان: الملف لازم يكون داخل مجلد صور البيانات فقط."""
+    v = db.query(Visit).filter(Visit.visit_id == visit_id).first()
+    if v is None:
+        raise HTTPException(status_code=404, detail="visit not found")
+    photo = (
+        db.query(VisitPhoto)
+        .filter(VisitPhoto.id == photo_id, VisitPhoto.visit_ref_id == v.id)
+        .first()
+    )
+    if photo is None or not photo.file_path:
+        raise HTTPException(status_code=404, detail="photo not found")
+    path = Path(photo.file_path).resolve()
+    root = Path(config.PHOTOS_DIR).resolve()
+    if not path.is_relative_to(root):
+        raise HTTPException(status_code=403, detail="forbidden")
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="file missing")
+    return FileResponse(str(path))
