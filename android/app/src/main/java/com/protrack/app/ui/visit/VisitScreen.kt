@@ -393,7 +393,7 @@ private fun LocationStep(
         }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
-            onClick = { onAddLocation(zone?.code ?: region?.code ?: project?.code) },
+            onClick = { onAddLocation(chosen?.code ?: zone?.code ?: region?.code ?: project?.code) },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null)
@@ -441,7 +441,7 @@ private fun LocationStep(
                         TextButton(
                             onClick = {
                                 showPicker = false
-                                onAddLocation(zone?.code ?: region?.code ?: project?.code)
+                                onAddLocation(chosen?.code ?: zone?.code ?: region?.code ?: project?.code)
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
@@ -453,15 +453,17 @@ private fun LocationStep(
                     items.forEach { node ->
                         TextButton(
                             onClick = {
-                                when (node.type) {
-                                    NodeType.PROJECT -> projectCode = node.code
-                                    NodeType.REGION -> regionCode = node.code
-                                    NodeType.ZONE -> zoneCode = node.code
-                                    NodeType.LOCATION -> {
+                                when {
+                                    node.children.isEmpty() -> {
+                                        // عنصر بدون أبناء (مشروع/منطقة/زون/موقع مفرد) — يُختار مباشرة كهدف الزيارة
                                         chosen = node
                                         onLocationPicked(node.code)
                                         showPicker = false
                                     }
+                                    node.type == NodeType.PROJECT -> projectCode = node.code
+                                    node.type == NodeType.REGION -> regionCode = node.code
+                                    node.type == NodeType.ZONE -> zoneCode = node.code
+                                    else -> Unit
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -506,6 +508,14 @@ private fun buildChosenPath(tree: List<TreeNode>, chosen: TreeNode?): String {
     }
     rec(tree, emptyList())
     return acc.joinToString(" ‹ ")
+}
+
+private fun findTreeNode(nodes: List<TreeNode>, code: String): TreeNode? {
+    for (node in nodes) {
+        if (node.code == code) return node
+        findTreeNode(node.children, code)?.let { return it }
+    }
+    return null
 }
 
 @Composable
@@ -892,10 +902,10 @@ private fun ReviewStep(
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(modifier = Modifier.height(8.dp))
-        val locationOptions by viewModel.locationOptions.collectAsState()
+        val tree by viewModel.hierarchyTree.collectAsState()
         visit?.let { activeVisit ->
-            val displayName = locationOptions.firstOrNull { it.code == activeVisit.locationCode }?.name
-                ?: activeVisit.locationCode
+            val node = findTreeNode(tree, activeVisit.locationCode)
+            val displayName = if (node != null) buildChosenPath(tree, node) else activeVisit.locationCode
             Text(
                 text = stringResource(R.string.visit_location_label, displayName),
                 style = MaterialTheme.typography.bodyMedium,
@@ -1357,9 +1367,7 @@ fun VisitsHistoryScreen(
         val nameByCode = mutableMapOf<String, String>()
         fun walk(nodes: List<TreeNode>) {
             for (node in nodes) {
-                if (node.type == NodeType.LOCATION) {
-                    nameByCode[node.code] = node.name
-                }
+                nameByCode[node.code] = node.name
                 walk(node.children)
             }
         }
