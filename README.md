@@ -1,57 +1,88 @@
-# ProTrack — نظام متابعة المواقع والصيانة
+<div dir="rtl">
 
-مستودع المشروع: تطبيق **Android** للفني (أوفلاين) + تطبيق **Web** للمهندس، يتبادلان
-**Visit Package** (تقرير Excel + صور موقعة + توقيع رقمي للجهاز).
+# AccTracker — نظام متابعة المواقع والصيانة الميدانية
 
-> المرجع الأساسي للمعمارية وخطة التنفيذ: `ARCHITECTURE.md` (في الجذر).
+**تطبيق أندرويد ميداني يعمل بدون إنترنت (Offline-First)** + **باك-إند ويب للمهندس** لاستيراد الزيارات وإدارة المواقع والمانوالات.
 
-## الحالة الحالية
+`Kotlin` · `Jetpack Compose` · `Room` · `CameraX` · `FastAPI` · `SQLite` · `PyMuPDF` · `FTS5` · `ECDSA P-256`
 
-- ✅ **Phase 0 (Contract):** مخططات العقد (`contract/`) + أدوات التحقق والبناء (`tools/`) + فحوص (`tests/`) — بلا تبعيات خارجية.
-- ✅ **Phase 1 (Web Core):** باك-إند الويب (`web/backend/`): FastAPI + SQLite + Alembic + شجرة المواقع + استيراد الحزم ودمج التقسيم + مطابقة المعدات.
-- ✅ **Phase 2 (Android MVP — مكتملة):** مشروع `android/` (Kotlin + Compose + Room + CameraX + FusedLocation):
-  - إدارة شجرة المواقع أوفلاين (مشروع/منطقة/Zone/موقع) بأكواد تلقائية.
-  - أول تشغيل: اسم الفني + اختيار اللغة (عربي/إنجليزي مع RTL) + شاشة ضبط دائمة.
-  - تدفق الزيارة: الموقع ← المعدات بقراءاتها ← بنود العنبر ← مراجعة.
-  - الكاميرا (بدون معرض) وGPS: كل صورة ببصمة SHA-256 + توقيع التقاط + إحداثيات.
-  - تصدير **حزمة موقّعة** (ECDSA P-256 من Android Keystore) + مشاركة.
-  - **متـحقَّقة على جهاز حقيقي (Samsung SM-A176B)** من الهاتف إلى قاعدة بيانات الويب.
-- 🚧 **Phase 3 (الـManuals):** رفع PDF + استخراج النص + تقسيم + تقطيع + فهرسة FTS5 + بحث، **+ استخراج قواعد الصيانة** (`maintenance_rule` بحالة DRAFT مع المصدر صفحة/قسم) عبر LLM محلي (Ollama — `qwen3.5:9b`) — في باك-إند الويب.
+</div>
 
-## تشغيل سريع — أدوات العقد (Phase 0)
+**AccTracker** is an offline-first field maintenance platform: a technician Android app (site visits, equipment, checklists, stamped photos, digitally signed export packages) plus an engineer web backend (package verification & import, hierarchy management, manuals with full-text search, and local-LLM maintenance rule extraction).
 
+<div dir="rtl">
+
+## ✨ المميزات
+
+### 📱 تطبيق الفني (Android) — يعمل بالكامل بدون إنترنت
+- **شجرة إدارية مرنة:** مشروع ← منطقة ← زون ← موقع، مع دعم تخطي المستويات الناقصة والزيارة على أي مستوى.
+- **تدفق زيارة كامل:** اختيار الموقع → المعدات والقراءات → بنود الفحص → المراجعة → التصدير.
+- **بنود مرنة:** حالة من قائمة منسدلة (سليم / ملاحظة / عطل) + ملاحظات + إضافة/تعديل/حذف بنود.
+- **صور موثّقة:** كل صورة تُختم تلقائيًا بالتاريخ/الوقت + إحداثيات GPS + اسم الموقع + اسم الفني، مع بصمة SHA-256 وتوقيع التقاط.
+- **إعادة استخدام المعدات:** زيارة جديدة لنفس الموقع تعرض معدات آخر زيارة تلقائيًا — وكل موقع معداته منفصلة تمامًا.
+- **حزمة زيارة موقّعة رقميًا (ECDSA P-256)** مع **تقرير إدارة احترافي** جاهز للمشاركة (ورقة Report بدون أي أكواد تقنية).
+- **سجل الزيارات:** استئناف المسودات + مشاركة الحزم والصور.
+
+### 🌐 باك-إند المهندس (Web)
+- استيراد الحزم الموقّعة بتحقق كامل (تجزئة/توقيع/تعارضات) ودمج Idempotent.
+- إدارة شجرة المواقع وأكوادها (PRJ/RGN/ZN/LOC) ودورة «جديد من الميدان».
+- **Manuals:** رفع PDF → استخراج نص → تقطيع → فهرسة FTS5 → بحث.
+- **استخراج قواعد الصيانة** من المانوالات عبر LLM محلي (Ollama) بحالة DRAFT للاعتماد.
+
+## 🧱 هيكل المستودع
+
+| المجلد | الوصف |
+|---|---|
+| `android/` | تطبيق الفني — Kotlin + Jetpack Compose + Room + CameraX |
+| `web/backend/` | باك-إند المهندس — FastAPI + SQLite (WAL) + Alembic |
+| `contract/` | عقود حزمة الزيارة: Schemas + قوائم التحقق + عينات |
+| `tools/` | `validate_package.py` (مصدر الحقيقة للتحقق) + أدوات التوقيع |
+| `tests/` | فحوص العقود الشاملة |
+| `ARCHITECTURE.md` | الوثيقة المرجعية الكاملة للمعمارية |
+
+## 🔐 الأمان والموثوقية
+- مفتاح توقيع فريد لكل جهاز (Android Keystore) — الحزم موقّعة ECDSA P-256.
+- كل صورة تحمل بصمة SHA-256 + توقيع التقاط مستقل.
+- تحقق إلزامي على كل حزمة: `python tools/validate_package.py <package.zip>`.
+- لا فقدان لعمل الميدان: العناصر الواردة من الفنيين تُدمج وتُراجع ولا تُحذف صامتًا.
+
+## 🚀 التشغيل السريع
+
+### تطبيق الأندرويد
 ```bash
-python tools/make_sample_package.py
-python tools/validate_package.py contract/samples/valid_package.zip --seen-db tests/_tmp/seen.json
-python tests/run_tests.py
+cd android
+./gradlew :app:assembleDebug        # بناء APK
+./gradlew :app:testDebugUnitTest    # فحوص الوحدة
 ```
 
-## تشغيل سريع — الويب (Phase 1)
-
+### باك-إند الويب
 ```bash
 cd web/backend
 py -3.12 -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m alembic upgrade head
-.venv\Scripts\python -m uvicorn app.main:app --reload
-.venv\Scripts\python -m pytest
+.venv/Scripts/python -m pip install -r requirements.txt
+.venv/Scripts/python -m alembic upgrade head
+.venv/Scripts/python -m uvicorn app.main:app --reload
+.venv/Scripts/python -m pytest
 ```
 
-- API: `http://127.0.0.1:8000/api/health`
-- تفاصيل أكثر: `web/backend/README.md`.
+## 📸 لقطات
 
-## تشغيل سريع — الأندرويد (Phase 2)
+| الشاشة الرئيسية | حول التطبيق |
+|---|---|
+| ![الرئيسية](docs/screenshots/home.png) | ![حول التطبيق](docs/screenshots/about.png) |
 
-```bash
-cd android
-.\gradlew.bat :app:assembleDebug
-.\gradlew.bat :app:testDebugUnitTest
-```
+## 🗺️ خارطة الطريق
+- ☁️ **مزامنة سحابية تلقائية (Offline-First Sync)** — رفع الحزم أولًا بأول عند توفر الشبكة.
+- 🖥️ واجهة ويب React متكاملة للمهندس.
+- 🔎 OCR للمانوالات الممسوحة ضوئيًا + توسيع طبقة الذكاء الاصطناعي.
 
-- تفاصيل أكثر: `android/README.md`.
+## 📬 التواصل
+- **Ahmed Ismail** — [LinkedIn](https://www.linkedin.com/in/ahmed-ismail-soliman)
 
-## خريطة العمل القادمة
+<div align="center">
 
-- استكمال Phase 3: OCR للـPDF الممسوحة ضوئيًا + اعتماد القواعد من واجهة الويب.
-- طبقة AI الأوسع: RAG أسئلة/أجوبة على الـManuals + حالة المضخة + التنبيهات (Ollama `qwen3.5:9b` متوفر على الجهاز).
-- واجهة React للمهندس (§5.2).
+© 2026 Advanced Construction Co. — جميع الحقوق محفوظة
+
+</div>
+
+</div>
