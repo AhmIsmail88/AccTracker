@@ -71,6 +71,20 @@ export interface CloudStatus {
   service_account_path: string | null;
 }
 
+export interface DoctorCheck {
+  id: string;
+  title: string;
+  status: "ok" | "fail" | "warn" | "skip";
+  detail: string;
+  hint: string | null;
+}
+
+export interface DoctorReport {
+  generated_at: string;
+  checks: DoctorCheck[];
+  summary: { device_ready: boolean; web_ready: boolean; all_ready: boolean };
+}
+
 export interface CloudAutoStatus {
   enabled: boolean;
   interval_seconds: number;

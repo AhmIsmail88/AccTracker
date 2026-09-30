@@ -13,6 +13,7 @@ datas = [
     (os.path.join(REPO_ROOT, "contract"), "contract"),
     (os.path.join(SPEC_DIR, "alembic"), "alembic"),
     (os.path.join(SPEC_DIR, "alembic.ini"), "."),
+    (os.path.join(REPO_ROOT, "android", "app", "google-services.json"), "."),
 ]
 binaries = []
 hiddenimports = []

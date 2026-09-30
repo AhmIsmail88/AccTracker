@@ -40,6 +40,7 @@ py -3.12 -m venv .venv
 | المزامنة السحابية | `GET /api/cloud/status` · `POST /api/cloud/pull` (سحب حزم Firebase واستيرادها) · CLI: `python -m app.scripts.pull_cloud` |
 | OCR للمانوالات الممسوحة | تلقائي عند الرفع (صفحات بلا نص) · `POST /api/manuals/{id}/ocr` (إعادة استخراج) — RapidOCR محلي بالكامل + تفكيك كلمات |
 | السحب الدوري (أولًا بأول) | `GET /api/cloud/auto` · `POST /api/cloud/auto` (تشغيل/إيقاف + ضبط الفترة) · `POST /api/cloud/auto/run` (دورة فورية) |
+| طبيب السحابة (فحص جاهزية) | `GET /api/cloud/doctor` — فحص حي شامل: الدخول المجهول + Firestore + Storage + حساب الخدمة، مع خطوة الحل لكل فشل |
 
 ## الفحوص
 
@@ -86,5 +87,5 @@ cd ..\backend
 الناتج: `web\backend\dist_desktop\AccTracker.exe` — دبل-كليك يشغّل اللوحة على `http://127.0.0.1:8000` (أو أول منفذ شاغر) ويفتح المتصفح تلقائيًا.
 
 - مجلد البيانات (قاعدة البيانات + الصور) يُنشأ بجانب الـEXE في `data\`، ويمكن تغييره بـ`PROTRAK_DATA_DIR`.
-- لتفعيل السحب السحابي: ضع `firebase-service-account.json` في مجلد `data\` بجانب الـEXE.
+- لتفعيل السحب السحابي: ضع `firebase-service-account.json` في مجلد `data\` بجانب الـEXE. — ثم افحص الجاهزية من صفحة المزامنة ← زر «افحص الآن» (طبيب السحابة).
 - البناء يشمل: الواجهة المبنية + tools/ + contract/ + alembic/ (تحديث قاعدة البيانات تلقائيًا عند التشغيل).

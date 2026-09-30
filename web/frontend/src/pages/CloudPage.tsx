@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type CloudAutoStatus, type CloudPullResult, type CloudStatus } from "../api";
+import { api, type CloudAutoStatus, type CloudPullResult, type CloudStatus, type DoctorReport } from "../api";
 
 const INTERVALS: { value: number; label: string }[] = [
   { value: 60, label: "كل دقيقة" },
@@ -16,6 +16,8 @@ export default function CloudPage() {
   const [status, setStatus] = useState<CloudStatus | null>(null);
   const [auto, setAuto] = useState<CloudAutoStatus | null>(null);
   const [result, setResult] = useState<CloudPullResult | null>(null);
+  const [doctor, setDoctor] = useState<DoctorReport | null>(null);
+  const [doctorBusy, setDoctorBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +35,18 @@ export default function CloudPage() {
     const t = window.setInterval(() => void loadStatus(), 20000);
     return () => window.clearInterval(t);
   }, [loadStatus]);
+
+  const runDoctor = async () => {
+    setDoctorBusy(true);
+    setError(null);
+    try {
+      setDoctor(await api<DoctorReport>("/api/cloud/doctor"));
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    } finally {
+      setDoctorBusy(false);
+    }
+  };
 
   const pull = async () => {
     setBusy(true);
@@ -159,6 +173,67 @@ export default function CloudPage() {
                 {auto.last_error && <> — ⚠ {auto.last_error}</>}
               </p>
             )}
+          </>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="detail-head">
+          <h3 style={{ margin: 0 }}>طبيب السحابة — فحص الجاهزية الشامل</h3>
+          <button className="btn primary" onClick={() => void runDoctor()} disabled={doctorBusy}>
+            {doctorBusy ? "جارٍ الفحص…" : "افحص الآن"}
+          </button>
+        </div>
+        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+          يفحص دخول الأجهزة (Anonymous) + Firestore + Storage + حساب الخدمة — ويعرض بالظبط اللي ناقص وازاي يتحل.
+        </p>
+        {doctor && (
+          <>
+            <p style={{ margin: "4px 0 10px" }}>
+              {doctor.summary.all_ready ? (
+                <span className="badge ok">جاهز بالكامل ✔</span>
+              ) : doctor.summary.device_ready ? (
+                <span className="badge warn">رفع الأجهزة جاهز — سحب الويب ناقص</span>
+              ) : (
+                <span className="badge err">مش جاهز بعد — راجع الفحوص تحت</span>
+              )}
+            </p>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الفحص</th>
+                    <th>الحالة</th>
+                    <th>التفاصيل</th>
+                    <th>الحل</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {doctor.checks.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.title}</td>
+                      <td>
+                        {c.status === "ok" ? (
+                          <span className="badge ok">سليم</span>
+                        ) : c.status === "fail" ? (
+                          <span className="badge err">ناقص</span>
+                        ) : c.status === "warn" ? (
+                          <span className="badge warn">تنبيه</span>
+                        ) : (
+                          <span className="badge muted">لم يُفحص</span>
+                        )}
+                      </td>
+                      <td className="muted" style={{ fontSize: 12.5 }}>
+                        {c.detail}
+                      </td>
+                      <td className="muted" style={{ fontSize: 12.5 }}>
+                        {c.hint ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </div>

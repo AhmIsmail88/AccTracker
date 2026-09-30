@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.base import get_db
 from app.services.auto_pull import manager as auto_manager
+from app.services.cloud_doctor import run_doctor
 from app.services.cloud_pull import CloudNotConfigured, pull_from_cloud, service_account_path
 
 router = APIRouter(prefix="/api/cloud", tags=["cloud"])
@@ -20,6 +21,12 @@ class AutoSettingsIn(BaseModel):
 def cloud_status():
     path = service_account_path()
     return {"configured": path is not None, "service_account_path": path}
+
+
+@router.get("/doctor")
+def cloud_doctor():
+    """تشخيص شامل لجاهزية Firebase: دخول مجهول + Firestore + Storage + حساب خدمة."""
+    return run_doctor()
 
 
 @router.post("/pull")

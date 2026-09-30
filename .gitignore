@@ -22,3 +22,5 @@ web/frontend/node_modules/
 web/frontend/dist/
 web/backend/dist_desktop/
 web/backend/build_desktop/
+web/backend/dist/
+web/backend/build/
